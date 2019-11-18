@@ -18,10 +18,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 library(tidyverse)
 library(lubridate)
-library(snakecase)
-library(janitor)
 library(stringr)
-library(dplyr)
 library(tseries)
 
 ## Read in file
@@ -84,8 +81,8 @@ library(plyr)
 #wailupe_refine = wailupe_dat %>%
 #  filter(str_detect(date, paste(c(".2008", ".2009", ".2010"), collapse = #'|')))
 
-wailupe_refine = wailupe_pcp_sum %>%
-  filter(date >"2008-1-1",
+wailupe_refine <- wailupe_pcp_sum %>%
+  filter(date >"2008-01-01",
          date <"2010-12-31")
 
 wailupe_ts_2 <- wailupe_refine %>%
@@ -100,5 +97,15 @@ wailupe_plot_2
 
 #write.csv(wailupe_refine, file = "wailupe_rainfall_r.txt")   
   
+```
+
+Awesome. The data is wrangled, now we need to pull out a good calibration sub dataset to feed into our model. 
+To do this, Natalie will filter by year, and see the percentage of data present per year (#days in data/365). Then, she will choose a representative dataset from the resulting subset. 
+
+
+```{r}
+
+
+
 ```
 
