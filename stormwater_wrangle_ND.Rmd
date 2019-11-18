@@ -9,22 +9,96 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## R Markdown
+```{r}
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+## Data Wrangling for Kahuwai Stormwater Data
+## N Dornan
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+##Load Packages
 
-```{r cars}
-summary(cars)
+library(tidyverse)
+library(lubridate)
+library(snakecase)
+library(janitor)
+library(stringr)
+library(dplyr)
+library(tseries)
+
+## Read in file
+
+rain_dat = read.csv("NOAA_precipdata_KW_111719.csv")
+
+#rain_dat$DATE <- ymd(rain_dat$DATE)
+
 ```
 
-## Including Plots
+Tidy up the data to make it a little easier to work with
+```{r}
 
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
+wailupe_tidy <- rain_dat %>% 
+  rename(station = STATION, station_name = STATION_NAME, elevation = ELEVATION, lat = LATITUDE, lon = LONGITUDE, date = DATE, time = TIME, qgag = QGAG, qgag_flag = Measurement.Flag, qgag_qual = Quality.Flag, qgag_units = Units, qpcp = QPCP, qpcp_flag = Measurement.Flag.1, qpcp_qual = Quality.Flag.1, qpcp_units = Units.1) %>%
+  filter(station_name == "WAILUPE VALLEY SCHOOL 723.6 HI US") %>% #filter to Wailupe gauge only
+  filter(qpcp != "-9999",
+         qpcp != "999",
+         qpcp != "999.99",
+         qpcp_flag != "g",
+         qgag != -9999.00) ## removes all flagged data
+    
+wailupe_pcp_sum <- wailupe_tidy %>%  
+  group_by(date) %>%
+  summarize(
+    daily_gag = sum(qpcp)) ## gives total summed precip data per day. HT is given in tenths of inches.
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+Use lubridate to clean up the dates and times...
+
+```{r}
+##TS TIME
+
+wailupe_pcp_sum$date <- ymd(wailupe_pcp_sum$date)
+
+wailupe_ts <- wailupe_pcp_sum %>%
+  ts(daily_gag, start=c(2008, 1), end=c(2014, 12), frequency=12)
+
+plot(wailupe_ts)
+
+
+######################## decompose ts
+
+wailupe_dc <- decompose(wailupe_ts)
+
+plot(wailupe_dc)
+
+######################## standard ggplot
+
+wailupe_plot <- ggplot(wailupe_pcp_sum, aes(date, daily_gag)) +
+  geom_line()
+
+wailupe_plot
+
+#########Now, we filter by year! Need to reattach plyr to use str_detect
+
+library(plyr)
+
+#wailupe_refine = wailupe_dat %>%
+#  filter(str_detect(date, paste(c(".2008", ".2009", ".2010"), collapse = #'|')))
+
+wailupe_refine = wailupe_pcp_sum %>%
+  filter(date >"2008-1-1",
+         date <"2010-12-31")
+
+wailupe_ts_2 <- wailupe_refine %>%
+  ts(wailupe_refine$qgag, start=c(2008, 1), end=c(2010, 12), frequency=12)
+
+plot(wailupe_ts_2)
+
+wailupe_plot_2 <- ggplot(wailupe_refine, aes(date, daily_gag)) +
+  geom_line()
+
+wailupe_plot_2
+
+#write.csv(wailupe_refine, file = "wailupe_rainfall_r.txt")   
+  
+```
+
