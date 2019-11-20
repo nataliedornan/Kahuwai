@@ -74,12 +74,7 @@ wailupe_plot <- ggplot(wailupe_pcp_sum, aes(date, daily_gag)) +
 
 wailupe_plot
 
-#########Now, we filter by year! Need to reattach plyr to use str_detect
-
-library(plyr)
-
-#wailupe_refine = wailupe_dat %>%
-#  filter(str_detect(date, paste(c(".2008", ".2009", ".2010"), collapse = #'|')))
+#########Now, we filter by year!
 
 wailupe_refine <- wailupe_pcp_sum %>%
   filter(date >"2008-01-01",
@@ -103,9 +98,74 @@ Awesome. The data is wrangled, now we need to pull out a good calibration sub da
 To do this, Natalie will filter by year, and see the percentage of data present per year (#days in data/365). Then, she will choose a representative dataset from the resulting subset. 
 
 
+```{r} 
+
+## This could be more elegant. Another way to do this is filtering by season.
+
+wailupe_08_investigate <- wailupe_refine %>%
+  filter(date >"2008-1-1",
+         date <"2008-12-31") %>%
+  summarize(
+    days_08 = length(date),
+    annual_percent = (days_08/365)*100
+                )
+
+#################
+
+wailupe_09_investigate <- wailupe_refine %>%
+  filter(date >"2009-1-1",
+         date <"2009-12-31") %>%
+  summarize(
+    days_09 = length(date),
+    annual_percent = (days_09/365)*100
+  )
+
+#################
+wailupe_10_investigate <- wailupe_refine %>%
+  filter(date >"2010-1-1",
+         date <"2010-12-31") %>%
+  summarize(
+    days_10 = length(date),
+    annual_percent = (days_10/365)*100
+  )
+
+```
+
+Now that we know Year 2010 has the most data days
+
+
 ```{r}
 
+wailupe_10 <- wailupe_pcp_sum %>%
+  filter(date >"2010-01-01",
+         date <"2010-12-31")
 
+wailupe_ts_10 <- wailupe_refine %>%
+  ts(wailupe_refine$qpcp, start=c(2010, 1), end=c(2010, 12), frequency=12)
+
+plot(wailupe_ts_10)
+
+wailupe_plot_10 <- ggplot(wailupe_10, aes(date, daily_gag)) +
+  geom_line()
+
+wailupe_plot_10
+
+
+######## refine for wet season HUZZZZZZZZZZZAAAAAHHHHHHHHHH
+
+wailupe_10_wet <- wailupe_pcp_sum %>%
+  filter(date >"2009-11-01",
+         date <"2010-03-31")
+
+wailupe_ts_10_wet <- wailupe_refine %>%
+  ts(wailupe_refine$qpcp, start=c(2009, 11), end=c(2010, 03), frequency=12)
+
+plot(wailupe_ts_10_wet)
+
+wailupe_plot_10_wet <- ggplot(wailupe_10_wet, aes(date, daily_gag)) +
+  geom_line()
+
+wailupe_plot_10_wet
 
 ```
 
