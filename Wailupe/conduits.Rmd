@@ -1,0 +1,201 @@
+---
+title: "Conduits"
+author: "Erica Johnson"
+date: "11/20/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, include=FALSE}
+library(tidyverse)
+library(dplyr)
+library(data.table)
+library(geosphere)
+
+```
+
+The storm water conduit shape file was clipped to Wailupe watershed in ArcGIS. 
+
+To be able to bulk import conduits into the SWMM model, conduits need to be matched to their "start"to"" and "end"from nodes or junctions (or storm water structures). 
+
+Tools in ArcGIS were used to get  XY coordinates of the conduits and the structures. They were matched and "spatially joined" into one file by the X-coordinate.
+
+I will determine columns to select, and rename to match the SWMM input file. See example below:
+
+[CONDUITS]								
+;;Name  From Node To Node  Length Roughness InOffset  OutOffset InitFlow  MaxFlow   
+;;--------------	----------------	----------------	----------	----------	----------	----------	----------	----------
+13108	20518	20528	136.3902012	0	0	0	0	0
+
+```{r, include = FALSE}
+conduits_data <- read_csv("Conduit_XY_Elev_SpatialJoin.csv")
+```
+
+Select the columns you will want to do for the analysis. Consider what is needed for both output files and any values that need to be calculated.  There are other columns which seem like they would have values usefull in SWMM, however most are  blank with "NA".
+
+"Length" provided by USGS seem to be distance between xy points. This "length"" is not the actual length of the conduit because it does not take into consideration height (xyz), so we will use the distance between xy points calcualte the actual length further down in the code.  
+
+We will also re-calculate distance between xy points because different sources return  different values for some of the conduits and some conduits need to have this distance calculated anyway because it is blank. 
+
+
+
+```{r, include=FALSE}
+
+#we select TYPE now for the next file we need
+
+conduits <- conduits_data %>% 
+  select( OBJECTID, ROUGHNESS, OBJECTID_12, RASTERVALU_1, TYPE, POINT_X, POINT_Y, SLOPE) %>% rename(Name = OBJECTID, Roughness = ROUGHNESS, Nodes = OBJECTID_12, Elevation = RASTERVALU_1) 
+
+#then add the rest of the columns. SWMM does not take "NA" the default blank value for R, so we must populate columns with 0.
+
+conduits$InitFlow <- 0
+conduits$MaxFlow <- 0
+conduits$Length <- 0
+conduits$InOffset <- 0
+conduits$OutOffset <- 0
+
+```
+
+Currently each conduit has two nodes (and two sets of coordinates). During the spatial join, a second row was created for each of the conduit's nodes. We need to organize this data so that each conduit has one row, but two columns, one for the higher elevation node ("from"), and the other for the lower elevation node. 
+
+We will do the same for their XY coordinates, which will help us calculate distance between points in the steps below.
+
+First, sort the data by conduit name then by the associated elevation of the storm structure. The node with the higher elevation will be listed first. To match the "to" and "from" convention in SWMM we will eventually switch these.
+
+```{r}
+
+# dcast will reshape or merge duplicate data (in this case "Name) and create a column for any unique data attached to "Name". It will use the variable "Node" and name unique values of nodes in numerical order.
+
+arranged <- conduits[with(conduits, order(Name, -Elevation, na.last=FALSE)),]
+
+match_nodes <- dcast(setDT(arranged), Name~rowid(Name, prefix="Nodes"), value.var="Nodes")
+
+#make a table with both x and y coordinates in one row
+
+match_x <- dcast(setDT(conduits), Name~rowid(Name, prefix="POINT_X"), value.var="POINT_X")
+
+match_y <- dcast(setDT(conduits), Name~rowid(Name, prefix="POINT_Y"), value.var="POINT_Y")
+
+#The match function will only have the two variables. We will need to merge conduit and "match"" data tables together using the merge function.
+
+merge_XY <-merge(match_x, match_y, by = "Name")
+
+merge_XY_nodes <-merge(merge_XY, match_nodes, by = "Name")
+
+```
+
+Here is the complicated part!
+
+We must now calculate the true length of the conduits using the following steps:
+
+1. Find distance "length" between xy coordinates of each conduit.
+
+2. For conduits where slope was provided, I took an average of the slopes: 59 conduits with a slope sum of 6.9443 divided by 59 = 0.1177. I will use these values to replace any NA values
+
+3. Using the slope and distance we will find the length of the conduit
+
+STEP 1. Distance
+```{r}
+
+XY_dist <- merge_XY_nodes %>%  rowwise() %>% mutate (width = distm(c(POINT_X1, POINT_Y1), c(POINT_X2, POINT_Y2), fun=distHaversine)) %>% mutate(width_ft = width*3.28084)
+
+```
+
+
+
+
+STEP 2. Slope values
+
+```{r}
+# Slope <- merge(conduits, XY_dist, by = "Name") %>% mutate(SLOPE = if_else(is.na(SLOPE), 0.1177, SLOPE)) %>%  mutate(POINT_Y3 = SLOPE*(POINT_X2 - POINT_X1)+POINT_Y1) %>% mutate(POINT_X3 = POINT_X2)
+```
+
+STEP 3. Using point slope intercept and pythagorean theorem, find the actual length (hypotenuse) 
+
+```{r}
+#merge conduits data with XY_dist data, replace empty slope values, use the point slope intercept form, then the distance function.
+
+#length <- Slope %>% rowwise() %>% mutate (length = distm(c(POINT_X1, POINT_Y1), c(POINT_X3, POINT_Y3), fun=distHaversine)) %>% mutate(length_ft = length*3.28084)
+
+```
+
+Alternate step 2/3 : use difference in elevation to calculate height, then length
+```{r}
+
+
+match_elev <- dcast(setDT(arranged), Name~rowid(Name, prefix="Elevation"), value.var="Elevation")
+
+merge_XY_elev <- merge(XY_dist, match_elev, by = "Name" )
+
+length <- merge(merge_XY_elev, conduits, by = "Name") %>%  mutate (length = sqrt(width_ft^2 +(Elevation1-Elevation2)^2))
+
+```
+
+
+
+
+Relace any NA values for other columns. Then select the columns we want for SWMM, and remove any duplicates. 
+
+I calculated average roughness value to be 1.18, so replace all "NA" values with 1.18. Also filter any conduits that do not have two nodes assigned to them - SWMM will not take these conduits, then select the rows you want to use for the two file outputs needed for SWMM.
+
+
+```{r}
+
+# data frame for both file outputs:
+distinct_conduits_1 <- length %>% mutate(Roughness = if_else(is.na(Roughness), 1.18, Roughness)) %>%  filter(Nodes2 !="NA") %>% filter(Nodes1 !="NA") %>% select(Name, Nodes1, Nodes2, length, Roughness, InOffset, OutOffset, InitFlow, MaxFlow, TYPE, Elevation1, Elevation2,) %>% 
+  distinct() 
+  
+
+
+
+# data frame for conduits file output:
+distinct_conduits <- distinct_conduits_1 %>% select(Name, Nodes1, Nodes2, length, Roughness, InOffset, OutOffset, InitFlow, MaxFlow) %>% distinct() 
+
+```
+
+Condiut file output:
+```{r}
+write.csv(distinct_conduits_1,"Wailupe_conduits_SWMM.csv", row.names = FALSE)
+```
+
+
+The next file we will prepare are the cross sections of the conduits. See SWMM example below:
+[XSECTIONS]							
+;;Link  Shape	Geom1	Geom2	Geom3 Geom4 Barrels Culvert   
+;;--------------	------------	----------------	----------
+13108	Circular    	0	0	0	0	0	0
+
+```{r}
+#for conduits, use Type to populate the Shape column that SWMM takes. Rename the types byt the different shapes provided by SWMM
+
+xsections <- distinct_conduits_1%>% select(Name, TYPE) %>% 
+  rename (Shapes =TYPE) %>% 
+  mutate (Shapes = str_replace_all(Shapes, "Reinforced Concrete Pipe", "Circular")) %>% 
+  mutate (Shapes = str_replace_all(Shapes, "Box Culvert", "Closed Rectangular")) %>% 
+  mutate (Shapes = str_replace_all(Shapes, "Channel" , "Trapezoidal")) %>% 
+  mutate (Shapes = str_replace_all(Shapes, "Ditch" , "Rectangular")) %>% 
+  mutate (Shapes = str_replace_all(Shapes, "Other", "Rectangular")) %>% 
+  distinct()
+
+#add columns for Geom1, Geom2, Geom3, Geom4,Barrels, and Culvert
+xsections$Geom1 <- 1
+xsections$Geom2 <- 1
+xsections$Geom3 <- 0
+xsections$Geom4 <- 0
+xsections$Barrels <- 1
+xsections$Culvert <- 0
+
+#added the model default values to columns. Not sure what they mean, but no error message from model now
+                          
+```
+
+Xsections file output
+```{r}
+
+write.csv(xsections,"Wailupe_xsections_SWMM.csv", row.names = FALSE)
+   
+```
+

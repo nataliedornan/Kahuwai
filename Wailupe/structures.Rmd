@@ -1,0 +1,173 @@
+---
+title: "structures"
+author: "Erica Johnson"
+date: "11/20/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r, include = FALSE}
+library(tidyverse)
+library(dplyr)
+library(data.table)
+library(geosphere)
+
+```
+
+For the stormwater structures, also used interchangeably in SWMM as Junctions or Nodes, we will select relevant columns, rename them and assign invert elevations to them. Invert elevation is how SWMM knows where the water should flow in a gravity fed system. The Elevation column in SWMM is actually "invert elevation".
+
+See SWMM example below:
+
+[JUNCTIONS]					
+;;Name  Elevation MaxDepth  InitDepth SurDepth  Aponded   
+;;--------------	----------	----------	----------	
+22503	0	0	0	0	8.5
+
+
+Reead in data
+```{r, include = FALSE}
+
+conduit_data <- read_csv("Conduit_XY_Elev_SpatialJoin.csv") 
+ 
+```
+
+Decisions regarding formatting:
+
+CATCHMENT_ is actually "CATCHMENT_DROP" according to the  USGS data. DRAINAGE_A is drainage area. Catchment and drainage areas are usually used interchangeably, and there doesn't seem to be a definition for catchment drop is USGS. 
+
+I think catchment drop is depth of the catchment. For this reason, I will use drainage area for area ponded value that SWMM takes and CATCHMENT_DROP as MaxDepth.
+
+Only 9 out of 950 structures have a value for invert elevation, so we will make use the elevation values from RASTERVALU column to calculate some value for invert elevation.
+
+The relationship between conduits and the structures attached to them is crucial to this analysis, particularly in figuring out the appropriate invert elevations to assign to each structure. SWMM will not take conduit slope, elevation, or any other parameter to determine the direction of flow in a gravity powered system - just invert elevation and it must be assigned to the stormwater structure. 
+
+
+Select columns and names to use. We are working with conduits and structures in this data set, so conduit names = Names and node (strucutre) names = Nodes
+```{r}
+
+conduits <- conduit_data %>%  select( OBJECTID, OBJECTID_12, RASTERVALU, POINT_X, POINT_Y, CATCHMENT_, DRAINAGE_A_1, SLOPE) %>% 
+  rename(Name = OBJECTID, Nodes = OBJECTID_12, Elevation = RASTERVALU, MaxDepth = CATCHMENT_, Aponded = DRAINAGE_A_1) 
+
+```
+
+Currently each conduit has two nodes (and two sets of coordinates). During the spatial join, a second row was created for each of the conduit's nodes. We need to organize this data so that each conduit has one row, but two columns, one for the higher elevation node ("from"), and the other for the lower elevation node. 
+
+We will do the same for their XY coordinates, which will help us calculate distance between points in the steps below.
+
+First, sort the data by conduit name then by the associated elevation of the storm structure. The node (or stormwater structure) with the higher elevation will be listed first. 
+```{r}
+conduits[with(conduits, order(Name, -Elevation, na.last=FALSE)),]
+```
+
+
+dcast will reshape or merge duplicate data (in this case "Name") and create a column for any unique data attached to "Name". It will use the variable "Node" and name unique values of nodes in numerical order.
+
+```{r}
+
+#match_nodes <- dcast(setDT(conduits), Name~rowid(Name, prefix="Nodes"), value.var="Nodes")
+
+#make a table with both x and y coordinates in one row
+
+#match_x <- dcast(setDT(conduits), Name~rowid(Name, prefix="POINT_X"), value.var="POINT_X")
+
+#match_y <- dcast(setDT(conduits), Name~rowid(Name, prefix="POINT_Y"), value.var="POINT_Y")
+
+#The match function will only have the two variables. We will need to merge conduit and "match"" data tables together using the merge function.
+
+#merge_XY <-merge(match_x, match_y, by = "Name")
+
+#merge_XY_nodes <-merge(merge_XY, match_nodes, by = "Name")
+
+```
+
+Here is the complicated part!
+
+We must now calculate invert elevation using the following steps:
+
+1. Find distance between xy coordinates of each conduit. There  are length columns in the datafile - this is not it's actual length but XY distance. We will recalculate this distance here because different methods return different values and also there are some blank values. 
+
+2. We will need to use slope to calculate conduit length. There are many conduits without slope values. For conduits where slope was provided, I took an average of the slopes: 59 conduits with a slope sum of 6.9443 divided by 59 = 0.1177. Replace all NA values with this values.
+
+3. Use point slope intercept form to find length of the conduit
+
+4. Using the Pythagorean theorem, we will find the verticle distance between the higher elevation and lower elevation node - this is the difference in invert elevation
+
+5. What do we do to get inver elevation not that we have the difference in elevation?
+
+STEP 1. Distance
+```{r}
+
+#XY_dist <- merge_XY_nodes %>%  rowwise() %>% mutate (width = distm(c(POINT_X1, POINT_Y1), c(POINT_X2, POINT_Y2), fun=distHaversine)) %>% mutate(width_ft = width*3.28084)
+
+```
+
+
+STEP 2. Slope values
+
+```{r}
+#Slope <- merge(conduits, XY_dist, by = "Name") %>% mutate(SLOPE = if_else(is.na(SLOPE), 0.1177, SLOPE)) %>%  mutate(POINT_Y3 = SLOPE*(POINT_X2 - POINT_X1)+POINT_Y1) %>% mutate(POINT_X3 = POINT_X2)
+```
+
+
+Step 3. Using point slope intercept and pythagorean theorem, find the actual length (hypotenuse) 
+
+```{r}
+#merge conduits data with XY_dist data, replace empty slope values, use the point slope intercept form, then the distance function.
+
+#length <- Slope %>% rowwise() %>% mutate (length = distm(c(POINT_X1, POINT_Y1), c(POINT_X3, POINT_Y3), fun=distHaversine)) %>% mutate(length_ft = length*3.28084)
+
+```
+
+
+Step 4: Height - difference in invert elevation between the two nodes. Use the distance function.
+
+```{r}
+#height <- length %>% mutate(height = distm(c(POINT_X1, POINT_Y1), c(POINT_X3, POINT_Y3), fun=distHaversine)) %>% mutate(height_ft = height*3.28084)
+```
+
+What values do we put for invert_elevation??
+SWMM nodes go from higher invert elevations to lower invert elevations
+Node Rim Elevation is the Node Invert Elevation + the Maximum node depth
+
+
+Add columns
+```{r}
+conduits$InitDepth <- 0
+conduits$SurDepth <- 0
+   
+```
+
+Now we arrange columns and replace any NA values.
+```{r}
+
+#arrange columns
+junctions <- conduits %>% select( Nodes , Elevation,  MaxDepth, InitDepth, SurDepth, Aponded) %>% mutate(MaxDepth = if_else(is.na(MaxDepth), 0, MaxDepth)) %>% mutate(Aponded = if_else(is.na(Aponded), 0, Aponded)) %>% distinct()
+
+```
+
+
+```{r}
+write.csv(junctions,"Wailupe_junctions_SWMM.csv", row.names = FALSE)
+```
+
+Next we need to make a file with the xy coordinates of the structures so SWMM knows where to put them.
+
+See SWMM example below:
+[COORDINATES]		
+;;Node          	X-Coord           	Y-Coord           
+;;--------------	------------------	------------------
+22503	1720700.042	41573.305
+```{r}
+
+#SWMM columns we need are: Node	X-Coord	Y-Coord
+coordinates <- conduits %>% select (Nodes, POINT_X, POINT_Y) %>% rename (Name = Nodes ,X_Coord =  POINT_X , Y_Coord = POINT_Y) %>% distinct()
+
+```
+
+```{r}
+write.csv(coordinates,"Wailupe_coordinates_SWMM.csv", row.names = FALSE)
+```
+
+
