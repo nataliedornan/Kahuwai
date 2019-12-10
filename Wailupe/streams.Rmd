@@ -1,0 +1,87 @@
+---
+title: "streams"
+author: "Erica Johnson"
+date: "12/8/2019"
+output: html_document
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, include = FALSE}
+library(tidyverse)
+library(dplyr)
+library(data.table)
+library(geosphere)
+```
+
+For streams we must characterize them in SWMM as storage, conduits, and junctions. For now, we have XY coordinates and elevation for points along the stream. Elevation is how SWMM knows where the water should flow in a gravity fed system. The Elevation column in SWMM is actually "invert elevation".
+
+See SWMM example below:
+
+[JUNCTIONS]					
+;;Name  Elevation MaxDepth  InitDepth SurDepth  Aponded   
+;;--------------	----------	----------	----------	
+22503	0	0	0	0	8.5
+
+
+Reead in data
+```{r, include = FALSE}
+
+stream_data <- read_csv("stream_XY_elev.csv") 
+ 
+```
+
+Decisions regarding formatting:
+
+There are duplicate Object IDs corresponding to a segment of the stream. We will use FID instead which are unique to each coordinate and should not pose any issues with the names of other points already in SWMM.
+
+Raster Value is elevation in ft.
+
+
+Select columns and names to use. We are working with conduits and structures in this data set, so conduit names = Names and node (strucutre) names = Nodes
+```{r}
+
+streams <- stream_data %>%  select( FID, RASTERVALU, POINT_X, POINT_Y) %>% rename(Nodes = FID, Elevation = RASTERVALU) 
+
+```
+
+Add columns
+```{r}
+streams$MaxDepth <- 0
+streams$InitDepth <- 0
+streams$SurDepth <- 0
+streams$Aponded <- 0
+```
+
+Now we arrange columns and replace any NA values.
+```{r}
+
+#select columns
+stream_junctions <- streams %>% select( Nodes, Elevation,  MaxDepth, InitDepth, SurDepth, Aponded) %>%  distinct()
+
+```
+
+
+```{r}
+write.csv(stream_junctions,"Wailupe_stream_junctions_SWMM.csv", row.names = FALSE)
+```
+
+Next we need to make a file with the xy coordinates of the structures so SWMM knows where to put them.
+
+See SWMM example below:
+[COORDINATES]		
+;;Node          	X-Coord           	Y-Coord           
+;;--------------	------------------	------------------
+22503	1720700.042	41573.305
+```{r}
+
+#SWMM columns we need are: Node	X-Coord	Y-Coord
+stream_coordinates <- streams %>% select (Nodes, POINT_X, POINT_Y) %>% rename (Name = Nodes ,X_Coord =  POINT_X , Y_Coord = POINT_Y) %>% distinct()
+
+```
+
+```{r}
+write.csv(stream_coordinates,"Wailupe_stream_coordinates_SWMM.csv", row.names = FALSE)
+```
+
