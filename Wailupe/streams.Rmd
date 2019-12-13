@@ -13,6 +13,7 @@ library(tidyverse)
 library(dplyr)
 library(data.table)
 library(geosphere)
+library(janitor)
 ```
 
 For streams we must characterize them in SWMM as storage, conduits, and junctions. For now, we have XY coordinates and elevation for points along the stream. Elevation is how SWMM knows where the water should flow in a gravity fed system. The Elevation column in SWMM is actually "invert elevation".
@@ -54,10 +55,8 @@ streams$SurDepth <- 0
 streams$Aponded <- 0
 ```
 
-Now we arrange columns and replace any NA values.
+Select columns
 ```{r}
-
-#select columns
 stream_junctions <- streams %>% select( Nodes, Elevation,  MaxDepth, InitDepth, SurDepth, Aponded) %>%  distinct()
 
 ```
@@ -77,7 +76,7 @@ See SWMM example below:
 ```{r}
 
 #SWMM columns we need are: Node	X-Coord	Y-Coord
-stream_coordinates <- streams %>% select (Nodes, POINT_X, POINT_Y) %>% rename (Name = Nodes ,X_Coord =  POINT_X , Y_Coord = POINT_Y) %>% distinct()
+stream_coordinates <- stream_data %>% select (FID, POINT_X, POINT_Y) %>% rename (Name = FID ,X_Coord =  POINT_X , Y_Coord = POINT_Y) %>% distinct()
 
 ```
 
@@ -85,3 +84,129 @@ stream_coordinates <- streams %>% select (Nodes, POINT_X, POINT_Y) %>% rename (N
 write.csv(stream_coordinates,"Wailupe_stream_coordinates_SWMM.csv", row.names = FALSE)
 ```
 
+Now we need to make stream conduits to connect the junctions.
+
+1. Nodes are arranged in the order they need to be connected:
+First sort them by decending y values then ascending X values
+```{r}
+arrange <-stream_data[with(stream_data, order(PEREN_ID, -POINT_Y, na.last=FALSE)),]
+```
+
+
+2. Create conduit names and assign conduits to node systematically, using stream perrenial ID and previously arranged node order
+```{r}
+
+conduit_assign <- arrange %>% group_by(PEREN_ID) %>%
+  mutate(con_assign1 = row_number()) %>% mutate(con_assign2 = row_number()-1)
+
+
+conduit_assign$con1 <- apply(conduit_assign,1,function(x) paste((x[4]), sep ="_",(x[14])))
+#remove space
+conduit_assign$con1 <- gsub('\\s+', '', conduit_assign$con1)
+
+conduit_assign$con2 <- apply(conduit_assign,1,function(x) paste((x[4]),sep ="_",(x[15]))) 
+#remove space
+conduit_assign$con2 <- gsub('\\s+', '', conduit_assign$con2)
+```
+
+
+
+
+```{r}
+
+df_con1 <- conduit_assign %>%  select(con1, FID, POINT_X, POINT_Y, RASTERVALU, PEREN_ID)
+
+df_con2 <- conduit_assign %>%  select(con2, FID, POINT_X, POINT_Y, RASTERVALU, PEREN_ID) %>% rename(con1 = con2)
+
+merge1 <- merge(df_con1, df_con2, by = "con1") 
+
+```
+
+
+
+We must now calculate the true length of the conduits using the following steps:
+
+1. Find distance "length" between xy coordinates of each conduit.
+
+2. Use difference in elevation to calculate height
+
+3. Use pythag. theorem to calculate length
+
+STEP 1. Distance
+```{r}
+
+XY_dist <- merge1 %>%  rowwise() %>% mutate (width = distm(c(POINT_X.x, POINT_Y.x), c(POINT_X.y, POINT_Y.y), fun=distHaversine)) %>% mutate(width_ft = width*3.28084)
+
+```
+
+Step 2-3 : use difference in elevation to calculate height, then length
+
+
+```{r}
+
+length <- XY_dist %>%  mutate (length = sqrt(width_ft^2 +(RASTERVALU.x-RASTERVALU.y)^2))
+
+
+```
+
+
+Select the columns we want for SWMM 
+
+I used roughness value 0.07, the higher end of the range for natural channels found in Appendix A-8 pg. 185 of EPA manual
+
+```{r}
+
+# data frame for both file outputs:
+streams <- length %>%  select(con1, FID.x, FID.y, length) %>% rename (Name = con1, FromNode = FID.x , ToNode = FID.y)
+streams$Roughness <- 0.07
+streams$InOffset <- 0
+streams$OutOffset <- 0
+streams$InitFlow <- 0
+streams$MaxFlow <- 0
+
+```
+
+Condiut file output:
+```{r}
+write.csv(streams,"Wailupe_stream_conduits_SWMM.csv", row.names = FALSE)
+```
+Note: After inputting file data to SWMM, I deleted two conduits ( 399_34 and 422_184). Conduits were the result of nodes with the exact same coordinates (264 & 335, 336 & 542). 
+
+	 
+	 	
+	 
+	 
+	 
+
+The next file we will prepare are the cross sections of the conduits. See SWMM example below:
+[XSECTIONS]							
+;;Link  Shape	Geom1	Geom2	Geom3 Geom4 Barrels Culvert   
+;;--------------	------------	----------------	----------
+13108	Circular    	0	0	0	0	0	0
+
+We will use Trapezoidal (open top) conduit type for the stream ass opossed to irregular natural channel because it has been channelized and is managed with a buldozer, and has mason ston retaining walls on each side. 
+
+We can use the irregular channel for upper watershed conduits, but that will need to be identified by perrenial ID
+```{r}
+
+xsections <- streams %>% select(Name)
+
+#add columns for Geom1, Geom2, Geom3, Geom4,Barrels, and Culvert
+xsections$Type <- "Trapezoidal"
+xsections$Geom1 <- 1
+xsections$Geom2 <- 1
+xsections$Geom3 <- 0
+xsections$Geom4 <- 0
+xsections$Barrels <- 1
+xsections$Culvert <- 0
+
+#added the model default values to columns. Not sure what they mean, but no error message from model now
+                          
+```
+
+Xsections file output
+```{r}
+
+write.csv(xsections,"Wailupe_stream_xsections_SWMM.csv", row.names = FALSE)
+   
+```

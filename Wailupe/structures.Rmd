@@ -61,75 +61,10 @@ First, sort the data by conduit name then by the associated elevation of the sto
 conduits[with(conduits, order(Name, -Elevation, na.last=FALSE)),]
 ```
 
+SWMM nodes go from higher invert elevations to lower invert elevations. We dont have invert elevation, so we will use rim elevation and correct the direction of flow in the model itself
 
-dcast will reshape or merge duplicate data (in this case "Name") and create a column for any unique data attached to "Name". It will use the variable "Node" and name unique values of nodes in numerical order.
-
-```{r}
-
-#match_nodes <- dcast(setDT(conduits), Name~rowid(Name, prefix="Nodes"), value.var="Nodes")
-
-#make a table with both x and y coordinates in one row
-
-#match_x <- dcast(setDT(conduits), Name~rowid(Name, prefix="POINT_X"), value.var="POINT_X")
-
-#match_y <- dcast(setDT(conduits), Name~rowid(Name, prefix="POINT_Y"), value.var="POINT_Y")
-
-#The match function will only have the two variables. We will need to merge conduit and "match"" data tables together using the merge function.
-
-#merge_XY <-merge(match_x, match_y, by = "Name")
-
-#merge_XY_nodes <-merge(merge_XY, match_nodes, by = "Name")
-
-```
-
-Here is the complicated part!
-
-We must now calculate invert elevation using the following steps:
-
-1. Find distance between xy coordinates of each conduit. There  are length columns in the datafile - this is not it's actual length but XY distance. We will recalculate this distance here because different methods return different values and also there are some blank values. 
-
-2. We will need to use slope to calculate conduit length. There are many conduits without slope values. For conduits where slope was provided, I took an average of the slopes: 59 conduits with a slope sum of 6.9443 divided by 59 = 0.1177. Replace all NA values with this values.
-
-3. Use point slope intercept form to find length of the conduit
-
-4. Using the Pythagorean theorem, we will find the verticle distance between the higher elevation and lower elevation node - this is the difference in invert elevation
-
-5. What do we do to get inver elevation not that we have the difference in elevation?
-
-STEP 1. Distance
-```{r}
-
-#XY_dist <- merge_XY_nodes %>%  rowwise() %>% mutate (width = distm(c(POINT_X1, POINT_Y1), c(POINT_X2, POINT_Y2), fun=distHaversine)) %>% mutate(width_ft = width*3.28084)
-
-```
-
-
-STEP 2. Slope values
-
-```{r}
-#Slope <- merge(conduits, XY_dist, by = "Name") %>% mutate(SLOPE = if_else(is.na(SLOPE), 0.1177, SLOPE)) %>%  mutate(POINT_Y3 = SLOPE*(POINT_X2 - POINT_X1)+POINT_Y1) %>% mutate(POINT_X3 = POINT_X2)
-```
-
-
-Step 3. Using point slope intercept and pythagorean theorem, find the actual length (hypotenuse) 
-
-```{r}
-#merge conduits data with XY_dist data, replace empty slope values, use the point slope intercept form, then the distance function.
-
-#length <- Slope %>% rowwise() %>% mutate (length = distm(c(POINT_X1, POINT_Y1), c(POINT_X3, POINT_Y3), fun=distHaversine)) %>% mutate(length_ft = length*3.28084)
-
-```
-
-
-Step 4: Height - difference in invert elevation between the two nodes. Use the distance function.
-
-```{r}
-#height <- length %>% mutate(height = distm(c(POINT_X1, POINT_Y1), c(POINT_X3, POINT_Y3), fun=distHaversine)) %>% mutate(height_ft = height*3.28084)
-```
-
-What values do we put for invert_elevation??
-SWMM nodes go from higher invert elevations to lower invert elevations
-Node Rim Elevation is the Node Invert Elevation + the Maximum node depth
+We have to make a decision here. Catchment drop may be Max depth (and we treat this column as such)
+Node Rim Elevation is the Node Invert Elevation + the Maximum node depth. We can get invert elev. for some but not all structures....
 
 
 Add columns
