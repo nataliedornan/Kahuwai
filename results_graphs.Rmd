@@ -1,0 +1,51 @@
+---
+title: "results_graphs"
+author: "Eleonore Durand"
+date: "February 13, 2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+```
+
+
+```{r, fig.width=10, fig.height=5}
+subcatch<- read_csv("subcatchments_all.csv") %>% 
+  mutate(subcatchment= OBJECTID_1) %>% 
+  select(subcatchment, Curve_Number, Slope, percent_imp, Area_sqft)
+  
+
+swm_results<-read_csv("wailupe_success_020920.csv")
+
+results<- merge(subcatch, swm_results, by = "subcatchment") %>% 
+  mutate(runoff_normalized= 
+           total_runoff_in/Area_sqft) %>% 
+  mutate(Urbanization_level= 
+           case_when(
+             percent_imp <15 |percent_imp == 15 ~ "Natural (less than 15 % Impervious)",
+             percent_imp >15 & percent_imp <45 ~ "Urbanized (Between 15 and 45 % Impervious)",
+             percent_imp >44.9999 ~ "Very urbanized (More than 45 % Impervious)"
+             )
+           )
+
+
+runoff_imp_graph<- results %>% 
+  ggplot(aes(x=percent_imp, y=total_runoff_in))+
+  geom_point(aes(color=Urbanization_level))+
+  labs(x= "Percent Impervious of Subcatchment", y= "Total Simulated Runoff (inches)")+
+  scale_y_continuous(limits= c(0,3), breaks= seq(0,2.5, by= 0.5),expand= c(0,0))+
+  scale_x_continuous(limits= c(0,80), breaks= seq(0,80, by= 10),expand= c(0,0))+
+  scale_color_discrete(name= "Urbanization Level")+
+  scale_color_manual(values= c("darkgreen", "darkseagreen", "darkgoldenrod1"))+
+  theme_classic()
+
+
+runoff_imp_graph
+
+```
+
