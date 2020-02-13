@@ -40,12 +40,41 @@ runoff_imp_graph<- results %>%
   labs(x= "Percent Impervious of Subcatchment", y= "Total Simulated Runoff (inches)")+
   scale_y_continuous(limits= c(0,3), breaks= seq(0,2.5, by= 0.5),expand= c(0,0))+
   scale_x_continuous(limits= c(0,80), breaks= seq(0,80, by= 10),expand= c(0,0))+
-  scale_color_discrete(name= "Urbanization Level")+
-  scale_color_manual(values= c("darkgreen", "darkseagreen", "darkgoldenrod1"))+
+  scale_color_manual(name= "Urbanization Level", values= c("darkgreen", "darkseagreen", "darkgoldenrod1"))+
   theme_classic()
 
 
 runoff_imp_graph
+
+```
+
+
+```{r}
+#graph observed vs simulated
+
+observed<- read_csv("c35_observed.csv")
+simulated <- read_csv("C35_simulated.csv")
+
+discharge<- merge(observed, simulated, by = "time_step")
+
+summary(discharge)
+
+graph<- discharge(discharge, aes(x=time_step, y=discharge_obs_cfs))+
+  geom_line()
+  
+calibrate_graph<- discharge %>% 
+  ggplot()+
+  geom_line(aes(x=time_step, y=discharge_obs_cfs), color="darkseagreen")+
+  geom_line(aes(x=time_step, y=simulated_flow_cfs), color= "darkgoldenrod1")+
+  theme_classic()+
+  labs(x="Time (hours)", y="Discharge (cfs)")+
+  scale_y_continuous(limits= c(0,275), breaks= seq(0,250, by= 25),expand= c(0,0))+
+  scale_x_continuous(limits= c(0,22), breaks= seq(0,22, by= 2),expand= c(0,0))+
+  annotate("text", label= "Observed", x=19.5, y=65, size=3.5)+
+  annotate("text", label= "Simulated", x=19.5, y=25, size=3.5)
+ 
+
+calibrate_graph  
 
 ```
 
