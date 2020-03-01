@@ -1,0 +1,288 @@
+---
+title: "stream_network"
+author: "Erica Johnson"
+date: "2/27/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, include=FALSE}
+#Libraries
+library(tidyverse)
+library(dplyr)
+library(data.table)
+library(geosphere)
+library(janitor)
+library(kableExtra)
+
+
+#Data with clean names
+#Data are conduits matched to structures. This is because we need conduit xsections from structures)
+data1 <- read_csv("stream_elev.csv") %>% clean_names()
+data2 <- read_csv("stream_poly.csv") %>% clean_names()
+```
+
+```{r}
+
+stream1 <- data1 %>% 
+  select(
+  objectid_1,
+  objectid, 
+  point_x, 
+  point_y, 
+  rastervalu
+  ) %>% 
+  rename(
+    nodes = objectid_1,
+    name = objectid,
+    elevation = rastervalu, 
+    x = point_x, 
+    y = point_y
+    ) 
+
+stream2 <- data2 %>% 
+  select(
+  objectid_1,
+  rastervalu
+  ) %>% 
+  rename(
+    nodes = objectid_1,
+    subc = rastervalu
+    ) 
+
+streams <- merge(
+  stream1, 
+  stream2, 
+  by = "nodes"
+  )
+```
+
+
+1. Nodes are arranged in the order they need to be connected:
+First sort them by decending y values then ascending X values
+```{r}
+arrange <-streams[with(streams, order(subc, -y, na.last=FALSE)),]
+```
+
+2. Create conduit names and assign conduits to node systematically, using stream subcatchment and arranged node order
+```{r}
+
+conduit_assign <- arrange %>% 
+  mutate(
+    count_nodes = row_number()
+  ) %>% 
+  group_by(
+    subc
+    ) %>%
+  mutate(
+    con_assign1 = row_number()
+    ) %>% 
+  mutate(
+      con_assign2 = row_number()-1
+      )
+
+conduit_assign$nodes <- apply(
+  conduit_assign,1,function(x) paste((x[7]), sep ="c",(x[2]))
+  )
+conduit_assign$con1 <- apply(
+  conduit_assign,1,function(x) paste((x[2]), sep ="c",(x[8]))
+  )
+
+#remove space
+conduit_assign$con1 <- gsub(
+  '\\s+', '', conduit_assign$con1
+  )
+
+conduit_assign$con2 <- apply(
+  conduit_assign,1,function(x) paste((x[2]),sep ="c",(x[9]))
+  ) 
+
+#remove space
+conduit_assign$con2 <- gsub(
+  '\\s+', '', conduit_assign$con2
+  )
+
+```
+
+3. Arrange and reshape data 
+Note: each conduit has start xy and end xy,as well as two different nodes so there are duplicate rows for each conduit
+```{r}
+
+con1 <- conduit_assign %>%  select(con1, subc, x, y, elevation, nodes)
+
+con2 <- conduit_assign %>%  select(con2,subc, x, y, elevation, nodes) %>% rename(con1 = con2)
+
+merge1 <- merge(con1, con2, by = "con1") 
+
+```
+
+4. We must now calculate the length of the conduits using the following steps:
+
+a. Find distance "length" between xy coordinates of each conduit.
+b. Use difference in elevation to calculate height
+c. Use pythag. theorem to calculate length
+
+a. Distance
+```{r}
+
+dist <- merge1 %>%  rowwise() %>% mutate (dist_m = distm(c(x.x, y.x), c(x.y, y.y), fun=distHaversine)) %>% mutate(dist_ft = dist_m*3.28084)
+
+```
+
+b-c : Height and Length
+```{r}
+length <- dist %>%  
+  mutate(
+    length = sqrt(dist_ft^2 +(elevation.x-elevation.y)^2)
+         ) %>% 
+  rename (
+    name = con1,
+    from_node = nodes.x,
+    to_node = nodes.y,
+    subc = subc.x
+  )
+```
+
+```{r}
+#add columns for Geom1, Geom2, Geom3, Geom4,Barrels, and Culvert
+length$shape <- "Trapezoidal"
+length$geom1 <- 30
+length$geom2 <- 10
+length$geom3 <- 1
+length$geom4 <- 1
+length$barrels <- "NA"
+length$culvert <- 0
+#added the model default values to columns. Not sure what they mean, but no error message from model now
+
+
+```
+4. file output for conduits
+
+[CONDUITS]								
+;;Name  From Node To Node  Length Roughness InOffset  OutOffset InitFlow  MaxFlow
+;;---------- ---------- ---------- ---------- ---------- ---------- ---------- ---------- ----------
+We used roughness value 0.07, the higher end of the range for natural channels found in Appendix A-8 pg. 185 of EPA manual
+
+Using the subcatchments delineations, we filtered just the natural streams. The channelized stream in the urban area is represented by "channel"
+```{r}
+conduit_stream <- length %>% 
+  filter(
+    subc <= 3|subc == 34|subc == 38 |subc == 24 | subc == 7
+  ) %>% 
+  select(
+    name,
+    from_node, 
+    to_node,
+    length
+    ) 
+natural_stream$roughness <- 0.07
+natural_stream$inoffset <- 0
+natural_stream$outoffset <- 0
+natural_stream$initflow <- 0
+natural_stream$maxflow <- 0
+
+
+write.csv(conduit_stream,"conduit_stream.csv", row.names = FALSE)
+```
+
+5. file output for xsection
+
+[XSECTIONS]							
+;;Link  Shape	Geom1	Geom2	Geom3 Geom4 Barrels Culvert   
+;;--------------	------------	----------------	----------
+
+```{r}
+xsection_stream <- length %>% 
+  filter(
+    subc <= 3|subc == 34|subc == 38 |subc == 24 | subc == 7
+  ) %>% 
+  rename(
+    link = name
+    ) %>% 
+  select(
+     link, 
+    shape
+    )
+xsection_stream$geom1 <- 30
+xsection_stream$geom2 <- 10
+xsection_stream$geom3 <- 1
+xsection_stream$geom4 <- 1
+xsection_stream$barrels <- 1
+xsection_stream$culvert <- 0
+
+write.csv(xsection_stream,"xsection_stream.csv", row.names = FALSE)
+```
+
+6. Junctions and Coordinates/Vertices
+
+[JUNCTIONS]					
+;;Name  Elevation MaxDepth  InitDepth SurDepth  Aponded   
+;;--------------	----------	----------	----------	
+```{r}
+
+junctions_stream <- conduit_assign %>% 
+  select(
+    nodes, 
+    elevation
+    ) %>% rename(
+      name = nodes
+      ) %>% 
+  filter(
+    subc <= 3|subc == 34|subc == 38 |subc == 24 | subc == 7
+  ) 
+junctions_stream$maxdepth <- 0
+junctions_stream$initdepth <- 0
+junctions_stream$surdepth <- 0
+junctions_stream$aponded <- 0
+
+write.csv(junctions_stream,"junctions_stream.csv", row.names = FALSE)
+```
+[COORDINATES]		
+;;Node          	X-Coord           	Y-Coord           
+;;--------------	------------------	------------------
+
+SWMM takes x and y that are in decimal degrees  (lat and long).
+```{r}
+coordinates_stream <- conduit_assign %>% 
+  select(
+    nodes, 
+    x, 
+    y
+         ) %>% 
+  rename(
+    x_coord = x, 
+    y_coord =y
+    ) %>% 
+  filter(
+    subc <= 3|subc == 34|subc == 38 |subc == 24 | subc == 7
+  ) 
+
+write.csv(coordinates_stream,"coordinates_stream.csv", row.names = FALSE)
+```
+We will have to decide which points are "vertices" which are points of change in conduit direction and which are "junctions" which are points where two or more conduits join.
+
+
+Step 7 - make a table by subcatchment for total lengths and average diameter/width/height
+
+```{r}
+
+#just select the upper watershed subcatchment. In the urban area, the stream is represented as "Channel".
+stream_lengths = length %>% filter(subc <= 3|subc == 34|subc == 38 |subc == 24 | subc == 7) %>% 
+  group_by(subc) %>% 
+  summarize(
+    sum_length_stream = sum(length),
+    mean_width_stream= mean(as.numeric(geom1)),
+    mean_height_stream= mean(as.numeric(geom2)),
+    mean_slope1_stream = mean(as.numeric(geom3)),
+    mean_slope2_stream = mean(as.numeric(geom4))
+    )
+
+
+```
+```{r}
+write.table(stream_lengths, file="total_lengths.csv", sep=",", eol="\n", append=TRUE, row.names=FALSE, col.names=TRUE)
+```
+
