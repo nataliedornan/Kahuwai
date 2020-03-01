@@ -1,0 +1,42 @@
+---
+title: "widths"
+author: "Erica Johnson"
+date: "3/1/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(dplyr)
+library(janitor)
+library(ggplot2)
+library(cowplot)
+
+
+
+data <-read_csv("old_widths.csv") %>% clean_names() 
+```
+
+```{r}
+new_widths <- data %>% 
+  mutate(new_width = case_when(
+    area <= 5 ~ 25,
+    area > 5 & area <= 10 ~ 50,
+    area > 10 & area <= 20 ~ 75,
+    area > 20 & area <= 30 ~ 100,
+    area > 40 & area <= 50 ~ 125,
+    area > 50 & area <= 60 ~ 150,
+    area > 60 & area <= 70 ~ 200,
+    area > 70 & area <= 80 ~ 250,
+    area > 80 & area <= 90 ~ 300,
+    area > 90 & area <= 100 ~ 350,
+    area > 10 ~ 400
+    )) 
+```
+
+```{r}
+write.csv(new_widths,"new_widths.csv", row.names = FALSE)
+```
+
