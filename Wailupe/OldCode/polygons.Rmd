@@ -1,0 +1,103 @@
+---
+title: "polygons"
+author: "Erica Johnson"
+date: "11/20/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+
+```
+```{r , include=FALSE}
+
+library(tidyverse)
+library(dplyr)
+library(data.table)
+```
+
+I will collect Name, Area, Width, X and Y coordinates and arrange them into the SWMM format. Much of the data regarding these polygons will resort to the project default values because they are not given. My hope is that if left blank, SWMM will fill in defaults when given the input file.
+
+See example SWMM format below:
+
+[SUBCATCHMENTS]								
+;;Name  Rain Gage Outlet Area %Imperv 	Width   	%Slope  	CurbLen 	SnowPack        
+;;--------------	----------------	----------------	
+1	*               	*               	5	25	500	0.5	0	                
+								
+```{r}
+polygons_data<- read_csv("Polygons_XY.csv")
+
+```
+
+```{r}
+
+polygons <- polygons_data %>%  select(OBJECTID,LAST_EDI_1,SHAPESTAre, SHAPESTLen, POINT_X, POINT_Y) %>% 
+  rename(Name = OBJECTID, Area = SHAPESTAre, Width = SHAPESTLen, X_Coord = POINT_X, Y_Coord = POINT_Y)
+#I am keeping the LAST_EDI_1 field because it has good information on what the polygon is and may help us determine subcatchment and infiltration values
+
+#add columns for "subcatchments" file, add model default values
+polygons$Rain_gage <- "R1"
+polygons$Outlet <- "O1"
+polygons$Imperv <- 25
+polygons$Slope <- 0.5
+polygons$CurbLen <- 0
+
+
+#arrange
+subc_polygons <- polygons %>% select(Name, Rain_gage, Outlet, Area, Imperv, Width, Slope, CurbLen) %>% distinct()
+```
+
+
+[SUBAREAS]								
+;;Subcatchment  	N-Imperv  	N-Perv    	S-Imperv  	S-Perv  	PctZero   	RouteTo   	PctRouted 	
+;;--------------	----------	----------	----------		
+1	0.01	0.1	0.05	0.05	25	OUTLET    		
+```{r}
+suba_polygons <- polygons %>% select(Name) %>% rename (Subcatchment = Name)%>% distinct()
+suba_polygons$N_Imperv <- 0.01
+suba_polygons$N_Perv <- 0.1
+suba_polygons$S_Imperv <- 0.05
+suba_polygons$S_Perv <- 0.05
+suba_polygons$PctZero <- 25
+suba_polygons$RouteTo <- "OUTLET"
+
+#used model defaults
+  
+```
+
+[INFILTRATION]					
+;;Subcatchment  	MaxRate   	MinRate   	Decay     	DryTime   	MaxInfil  
+;;--------------	----------	----------	----------	
+1	3	0.5	4	7	0
+```{r}
+infil_polygons <-suba_polygons %>% select(Subcatchment)
+infil_polygons$CurveNum <- 0
+infil_polygons$Blank <- 0.5
+infil_polygons$DryTime <- 0
+
+
+
+```
+
+[Polygons]		
+;;Subcatchment  	X-Coord           	Y-Coord           
+;;--------------	------------------	------------------
+1	-19.96	8113.772
+1	2594.81	7475.05
+1	1077.844	5389.222
+1	-1007.984	6926.148
+1	-19.96	8133.733
+```{r}
+polygons_xy <- polygons%>% select(Name, X_Coord, Y_Coord) %>% rename(Subcatchment = Name) %>% distinct()
+```
+
+write csv file
+```{r}
+write.csv(subc_polygons ,"Wailupe_subcpoly_SWMM.csv", row.names = FALSE)
+write.csv(suba_polygons ,"Wailupe_subapoly_SWMM.csv", row.names = FALSE)
+write.csv(polygons_xy ,"Wailupe_polypoly_SWMM.csv", row.names = FALSE)
+write.csv(infil_polygons ,"Wailupe_infilpoly_SWMM.csv", row.names = FALSE)
+```
+
