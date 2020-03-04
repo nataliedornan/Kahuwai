@@ -9,7 +9,7 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r}
+```{r, message=FALSE, warning=FALSE}
 
 ## Data Wrangling for Kahuwai Stormwater Data
 ## N Dornan
@@ -23,74 +23,109 @@ library(tseries)
 
 ## Read in file
 
-rain_dat = read.csv("NOAA_precipdata_KW_111719.csv")
+rain_dat_77 = read.csv("NOAA_precipdata77_KW_02032020.csv")
+rain_dat_08 = read.csv("NOAA_precipdata08_KW_111719.csv")
+rain_paiko = read.csv("NOAA_paikodaily_KW_02062020.csv")
 
-#rain_dat$DATE <- ymd(rain_dat$DATE)
+##Use lubridate to clean up the dates and times...
+
+rain_dat_77$DATE <- ymd(rain_dat_77$DATE)
+rain_dat_08$DATE <- ymd(rain_dat_08$DATE)
+rain_paiko$DATE <- ymd(rain_paiko$DATE)
 
 ```
 
 Tidy up the data to make it a little easier to work with
 ```{r}
 
-wailupe_tidy <- rain_dat %>% 
+wailupe_tidy_77 <- rain_dat_77 %>% 
   rename(station = STATION, station_name = STATION_NAME, elevation = ELEVATION, lat = LATITUDE, lon = LONGITUDE, date = DATE, time = TIME, qgag = QGAG, qgag_flag = Measurement.Flag, qgag_qual = Quality.Flag, qgag_units = Units, qpcp = QPCP, qpcp_flag = Measurement.Flag.1, qpcp_qual = Quality.Flag.1, qpcp_units = Units.1) %>%
   filter(station_name == "WAILUPE VALLEY SCHOOL 723.6 HI US") %>% #filter to Wailupe gauge only
   filter(qpcp != "-9999",
          qpcp != "999",
          qpcp != "999.99",
          qpcp_flag != "g",
-         qgag != -9999.00) ## removes all flagged data
+         qpcp_flag != "{",
+         qpcp_flag != "}",
+         qpcp_flag != "[",
+         qpcp_flag != "]",
+         qgag != "-9999.00",
+         qgag != "-9999",
+         qgag_flag != "g",
+         qgag_flag != "V",
+         qgag_flag != "P",
+         qgag_flag != "{",
+         qgag_flag != "}",
+         qgag_flag != "[",
+         qgag_flag != "]") ## removes all flagged data
     
-wailupe_pcp_sum <- wailupe_tidy %>%  
+wailupe_daily_77 <- wailupe_tidy_77 %>%  
   group_by(date) %>%
   summarize(
-    daily_gag = sum(qpcp)) ## gives total summed precip data per day. HT is given in tenths of inches.
+    daily_pcp = sum(qpcp),
+    daily_vol = sum(qgag)) ## gives total summed precip data per day. HT is given in hundreths of inches.
+
+
 ```
 
 
-Use lubridate to clean up the dates and times...
 
 ```{r}
 ##TS TIME
 
-wailupe_pcp_sum$date <- ymd(wailupe_pcp_sum$date)
+wailupe_daily_77$date <- ymd(wailupe_daily_77$date)
 
-wailupe_ts <- wailupe_pcp_sum %>%
-  ts(daily_gag, start=c(2008, 1), end=c(2014, 12), frequency=12)
+wailupe_ts <- wailupe_daily_77 %>%
+  ts(daily_gag, start=c(1996, 1), end=c(2014, 12), frequency=12)
 
 plot(wailupe_ts)
 
 
-######################## decompose ts
-
-wailupe_dc <- decompose(wailupe_ts)
-
-plot(wailupe_dc)
-
 ######################## standard ggplot
 
-wailupe_plot <- ggplot(wailupe_pcp_sum, aes(date, daily_gag)) +
+wailupe_plot_pcp <- ggplot(wailupe_daily_77, aes(date, daily_pcp)) +
   geom_line()
 
-wailupe_plot
+wailupe_plot_pcp
 
-#########Now, we filter by year!
-
-wailupe_refine <- wailupe_pcp_sum %>%
-  filter(date >"2008-01-01",
-         date <"2010-12-31")
-
-wailupe_ts_2 <- wailupe_refine %>%
-  ts(wailupe_refine$qgag, start=c(2008, 1), end=c(2010, 12), frequency=12)
-
-plot(wailupe_ts_2)
-
-wailupe_plot_2 <- ggplot(wailupe_refine, aes(date, daily_gag)) +
+wailupe_plot_gag <- ggplot(wailupe_daily_77, aes(date, daily_vol)) +
   geom_line()
 
-wailupe_plot_2
+wailupe_plot_gag
 
-#write.csv(wailupe_refine, file = "wailupe_rainfall_r.txt")   
+##search for 2 year, 24 hour storm event (4.78 inches plus/minus 4.12-5.57 inches 90% confidence interval!)
+
+wailupe_investigate_1 <- wailupe_daily_77 %>%
+  filter(daily_pcp > "4.12",
+         daily_pcp < "5.57")
+
+scatterplot <- ggplot(wailupe_daily_77, aes(x= daily_pcp, y = daily_vol)) +
+                        geom_point()
+
+scatterplot
+
+wailupe_clean_daily <- wailupe_daily_77 %>%
+  filter(date > "2010-01-01",
+         date < "2014-12-31")
+
+hist <- ggplot(wailupe_clean_daily, aes(x= daily_pcp)) +
+  geom_histogram()
+
+hist
+
+```
+
+```{r}
+#########Explore Paiko Dataset
+
+paiko_precip <- rain_paiko %>%
+  select(DATE,PRCP) %>%
+  filter(PRCP > "0")
+
+paiko_explore <- ggplot(paiko_precip, aes(x = DATE, y = PRCP)) +
+  geom_point()
+
+paiko_explore
   
 ```
 
@@ -102,6 +137,32 @@ To do this, Natalie will filter by year, and see the percentage of data present 
 
 ## This could be more elegant. Another way to do this is filtering by season.
 
+######################
+wailupe_05_investigate <- wailupe_tidy_77 %>%
+  filter(date >"2005-1-1",
+         date <"2005-12-31") %>%
+  summarize(
+    days_05 = length(date),
+    annual_percent = (days_05/365)*100)
+
+######################
+wailupe_06_investigate <- wailupe_tidy_77 %>%
+  filter(date >"2006-1-1",
+         date <"2006-12-31") %>%
+  summarize(
+    days_06 = length(date),
+    annual_percent = (days_06/365)*100)
+
+######################3
+wailupe_07_investigate <- wailupe_tidy_77 %>%
+  filter(date >"2007-1-1",
+         date <"2007-12-31") %>%
+  summarize(
+    days_07 = length(date),
+    annual_percent = (days_07/365)*100)
+
+######    
+    
 wailupe_08_investigate <- wailupe_refine %>%
   filter(date >"2008-1-1",
          date <"2008-12-31") %>%
@@ -121,7 +182,7 @@ wailupe_09_investigate <- wailupe_refine %>%
   )
 
 #################
-wailupe_10_investigate <- wailupe_refine %>%
+wailupe_10_investigate <- wailupe_tidy_77 %>%
   filter(date >"2010-1-1",
          date <"2010-12-31") %>%
   summarize(
@@ -129,10 +190,35 @@ wailupe_10_investigate <- wailupe_refine %>%
     annual_percent = (days_10/365)*100
   )
 
+#################
+wailupe_11_investigate <- wailupe_tidy_77 %>%
+  filter(date >"2011-1-1",
+         date <"2011-12-31") %>%
+  summarize(
+    days_11 = length(date),
+    annual_percent = (days_11/365)*100
+  )
+#################
+wailupe_12_investigate <- wailupe_tidy_77 %>%
+  filter(date >"2012-1-1",
+         date <"2012-12-31") %>%
+  summarize(
+    days_12 = length(date),
+    annual_percent = (days_12/365)*100
+  )
+
+#################
+wailupe_13_investigate <- wailupe_tidy_77 %>%
+  filter(date >"2013-1-1",
+         date <"2013-12-31") %>%
+  summarize(
+    days_13 = length(date),
+    annual_percent = (days_13/365)*100
+  )
+
 ```
 
 Now that we know Year 2010 has the most data days
-
 
 ```{r}
 
@@ -141,12 +227,14 @@ wailupe_10 <- wailupe_pcp_sum %>%
          date <"2010-12-31")
 
 wailupe_ts_10 <- wailupe_refine %>%
-  ts(wailupe_refine$qpcp, start=c(2010, 1), end=c(2010, 12), frequency=12)
+  ts(wailupe_refine$qpcp, start=c(2009, 1), end=c(2010, 12), frequency=12)
 
 plot(wailupe_ts_10)
 
 wailupe_plot_10 <- ggplot(wailupe_10, aes(date, daily_gag)) +
-  geom_line()
+  geom_line() +
+  xlab("Date") +
+  ylab("Precipitation (inches)")
 
 wailupe_plot_10
 
@@ -154,18 +242,41 @@ wailupe_plot_10
 ######## refine for wet season HUZZZZZZZZZZZAAAAAHHHHHHHHHH
 
 wailupe_10_wet <- wailupe_pcp_sum %>%
-  filter(date >"2009-11-01",
-         date <"2010-03-31")
+  filter(date >"2009-09-01",
+         date <"2010-05-31")
 
 wailupe_ts_10_wet <- wailupe_refine %>%
-  ts(wailupe_refine$qpcp, start=c(2009, 11), end=c(2010, 03), frequency=12)
+  ts(wailupe_refine$qpcp, start=c(2009, 09), end=c(2010, 05), frequency=12)
 
 plot(wailupe_ts_10_wet)
 
 wailupe_plot_10_wet <- ggplot(wailupe_10_wet, aes(date, daily_gag)) +
-  geom_line()
+  geom_line() +
+  xlab("Date") +
+  ylab("Precipitation (inches)")
 
 wailupe_plot_10_wet
+
+```
+```{r}
+
+##search for 2 year, 24 hour storm event (4.78 inches plus/minus 4.12-5.57 inches 90% confidence interval!)
+
+wailupe_storm <- wailupe_tidy %>%
+  filter(date == 20101219)
+
+##THIS STORM HAS A CUMULATIVE PCP OF 5.3 INCHES
+
+storm_plot <- ggplot(wailupe_storm, aes(time, qpcp)) +
+  geom_point() +
+  xlab("Time") +
+  ylab("Precipitation (inches)") +
+  theme_classic()
+
+storm_plot
+
+
+write.csv(wailupe_storm, file = "wailupe_rainfall_event_r.csv")   
 
 ```
 

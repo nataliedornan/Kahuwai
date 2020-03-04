@@ -59,8 +59,8 @@ discharge<- merge(observed, simulated, by = "time_step")
 
 summary(discharge)
 
-graph<- discharge(discharge, aes(x=time_step, y=discharge_obs_cfs))+
-  geom_line()
+#graph<- discharge(discharge, aes(x=time_step, y=discharge_obs_cfs))+
+ # geom_line()
   
 calibrate_graph<- discharge %>% 
   ggplot()+
