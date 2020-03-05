@@ -88,26 +88,29 @@ wailupe_plot_pcp <- ggplot(wailupe_daily_77, aes(date, daily_pcp)) +
 
 wailupe_plot_pcp
 
-wailupe_plot_gag <- ggplot(wailupe_daily_77, aes(date, daily_vol)) +
-  geom_line()
-
-wailupe_plot_gag
-
 ##search for 2 year, 24 hour storm event (4.78 inches plus/minus 4.12-5.57 inches 90% confidence interval!)
 
 wailupe_investigate_1 <- wailupe_daily_77 %>%
   filter(daily_pcp > "4.12",
          daily_pcp < "5.57")
 
+## Storms that fall in this range are on:
+# 2004-01-02
+# 2005-01-29
+# 2010-12-19
+
+## Look at scatter of qpcp vs qgag
 scatterplot <- ggplot(wailupe_daily_77, aes(x= daily_pcp, y = daily_vol)) +
                         geom_point()
 
 scatterplot
 
+## filter dataset from 2004-2014
 wailupe_clean_daily <- wailupe_daily_77 %>%
-  filter(date > "2010-01-01",
+  filter(date > "2004-01-01",
          date < "2014-12-31")
 
+## look at histogram plot to investigate storm frequency over given time period
 hist <- ggplot(wailupe_clean_daily, aes(x= daily_pcp)) +
   geom_histogram()
 
@@ -163,7 +166,7 @@ wailupe_07_investigate <- wailupe_tidy_77 %>%
 
 ######    
     
-wailupe_08_investigate <- wailupe_refine %>%
+wailupe_08_investigate <- wailupe_tidy_77 %>%
   filter(date >"2008-1-1",
          date <"2008-12-31") %>%
   summarize(
@@ -173,7 +176,7 @@ wailupe_08_investigate <- wailupe_refine %>%
 
 #################
 
-wailupe_09_investigate <- wailupe_refine %>%
+wailupe_09_investigate <- wailupe_tidy_77 %>%
   filter(date >"2009-1-1",
          date <"2009-12-31") %>%
   summarize(
@@ -218,20 +221,42 @@ wailupe_13_investigate <- wailupe_tidy_77 %>%
 
 ```
 
-Now that we know Year 2010 has the most data days
+filter years with targeted storm events
 
 ```{r}
 
-wailupe_10 <- wailupe_pcp_sum %>%
+wailupe_04 <- wailupe_daily_77 %>%
+  filter(date >"2004-01-01",
+         date <"2004-12-31")
+
+wailupe_plot_04 <- ggplot(wailupe_04, aes(date, daily_pcp)) +
+  geom_line() +
+  xlab("Date") +
+  ylab("Precipitation (inches)")
+
+wailupe_plot_04
+
+###############
+
+wailupe_05 <- wailupe_daily_77 %>%
+  filter(date >"2005-01-01",
+         date <"2005-12-31")
+
+wailupe_plot_05 <- ggplot(wailupe_05, aes(date, daily_pcp)) +
+  geom_line() +
+  xlab("Date") +
+  ylab("Precipitation (inches)")
+
+wailupe_plot_05
+
+
+###############
+
+wailupe_10 <- wailupe_daily_77 %>%
   filter(date >"2010-01-01",
          date <"2010-12-31")
 
-wailupe_ts_10 <- wailupe_refine %>%
-  ts(wailupe_refine$qpcp, start=c(2009, 1), end=c(2010, 12), frequency=12)
-
-plot(wailupe_ts_10)
-
-wailupe_plot_10 <- ggplot(wailupe_10, aes(date, daily_gag)) +
+wailupe_plot_10 <- ggplot(wailupe_10, aes(date, daily_pcp)) +
   geom_line() +
   xlab("Date") +
   ylab("Precipitation (inches)")
@@ -239,44 +264,74 @@ wailupe_plot_10 <- ggplot(wailupe_10, aes(date, daily_gag)) +
 wailupe_plot_10
 
 
-######## refine for wet season HUZZZZZZZZZZZAAAAAHHHHHHHHHH
-
-wailupe_10_wet <- wailupe_pcp_sum %>%
-  filter(date >"2009-09-01",
-         date <"2010-05-31")
-
-wailupe_ts_10_wet <- wailupe_refine %>%
-  ts(wailupe_refine$qpcp, start=c(2009, 09), end=c(2010, 05), frequency=12)
-
-plot(wailupe_ts_10_wet)
-
-wailupe_plot_10_wet <- ggplot(wailupe_10_wet, aes(date, daily_gag)) +
-  geom_line() +
-  xlab("Date") +
-  ylab("Precipitation (inches)")
-
-wailupe_plot_10_wet
 
 ```
+
+
 ```{r}
 
-##search for 2 year, 24 hour storm event (4.78 inches plus/minus 4.12-5.57 inches 90% confidence interval!)
+##search for 2 year, 24 hour storm events (4.78 inches plus/minus 4.12-5.57 inches 90% confidence interval!)
 
-wailupe_storm <- wailupe_tidy %>%
-  filter(date == 20101219)
+wailupe_storm_04 <- wailupe_tidy_77 %>%
+  filter(date > "2004-01-01",
+         date < "2004-01-04")
 
-##THIS STORM HAS A CUMULATIVE PCP OF 5.3 INCHES
-
-storm_plot <- ggplot(wailupe_storm, aes(time, qpcp)) +
+storm_plot_04 <- ggplot(wailupe_storm_04, aes(time, qpcp)) +
   geom_point() +
   xlab("Time") +
   ylab("Precipitation (inches)") +
   theme_classic()
 
-storm_plot
+storm_plot_04
 
+write.csv(wailupe_storm_04, file = "wailupe_storm_20040102_r.csv")  
 
-write.csv(wailupe_storm, file = "wailupe_rainfall_event_r.csv")   
+######
+
+wailupe_storm_05 <- wailupe_tidy_77 %>%
+  filter(date > "2005-01-27",
+         date < "2005-01-30")
+
+storm_plot_05 <- ggplot(wailupe_storm_05, aes(time, qpcp)) +
+  geom_point() +
+  xlab("Time") +
+  ylab("Precipitation (inches)") +
+  theme_classic()
+
+storm_plot_05
+
+write.csv(wailupe_storm_05, file = "wailupe_storm_20050128_r.csv")  
+
+##### condensed 2010 storm used for calibration
+
+wailupe_storm_10_test <- wailupe_tidy_77 %>%
+  filter(date == "2010-12-19")
+
+storm_plot_10_test <- ggplot(wailupe_storm_10_test, aes(time, qpcp)) +
+  geom_point() +
+  xlab("Time") +
+  ylab("Precipitation (inches)") +
+  theme_classic()
+
+storm_plot_10_test
+
+write.csv(wailupe_storm_10_test, file = "wailupe_storm_10test_r.csv") 
+
+#####
+
+wailupe_storm_10 <- wailupe_tidy_77 %>%
+  filter(date > "2010-12-18",
+         date < "2010-12-20")
+
+storm_plot_10 <- ggplot(wailupe_storm_10, aes(time, qpcp)) +
+  geom_point() +
+  xlab("Time") +
+  ylab("Precipitation (inches)") +
+  theme_classic()
+
+storm_plot_10
+
+write.csv(wailupe_storm_10, file = "wailupe_storm_20101219_r.csv") 
 
 ```
 
