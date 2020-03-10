@@ -43,7 +43,7 @@ runoff_imp_graph_dry<- results_dry %>%
   ggplot(aes(x=percent_imp, y=total_runoff_in))+
   geom_point(aes(color=Urbanization_level))+
   labs(x= "Percent Impervious of Subcatchment", y= "Total Simulated Runoff (inches)")+
-  scale_y_continuous(limits= c(0,3), breaks= seq(0,2.5, by= 0.5),expand= c(0,0))+
+  scale_y_continuous(limits= c(0,7), breaks= seq(0,7, by= 1),expand= c(0,0))+
   scale_x_continuous(limits= c(0,80), breaks= seq(0,80, by= 10),expand= c(0,0))+
   scale_color_manual(name= "Urbanization Level", values= c("darkgreen", "darkseagreen", "darkgoldenrod1"))+
   theme_classic()
