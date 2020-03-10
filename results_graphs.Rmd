@@ -120,6 +120,7 @@ discharge<- merge(observed, simulated, by = "time_step")
 
 summary(discharge)
 
+
 dischargettest<- t.test(discharge$discharge_obs_cfs, discharge$simulated_flow_cfs)
 
 regress<- lm(discharge_obs_cfs ~ simulated_flow_cfs, data = discharge)
@@ -141,6 +142,7 @@ graph<- ggplot(discharge, aes(x=discharge_obs_cfs, simulated_flow_cfs))+
   geom_point()
 
 graph
+
   
 calibrate_graph<- discharge %>% 
   ggplot()+
@@ -156,7 +158,7 @@ calibrate_graph<- discharge %>%
 
 calibrate_graph  
 
-results_table<- results %>% 
+results_table<- results_wet %>% 
   group_by(Urbanization_level) %>% 
   summarize(
     number_of_subcatch=length(subcatchment),
@@ -183,7 +185,7 @@ table_pretty
 
 ```{r}
 observed09<- read_csv("c35_observed_09.csv")
-simulated09 <- read_csv("C35_simulated09.csv")
+simulated09 <- read_csv("C35_simulated09.csv") 
 
 discharge09<- merge(observed09, simulated09, by = "time_step")
 
