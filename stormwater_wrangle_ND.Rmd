@@ -105,9 +105,9 @@ scatterplot <- ggplot(wailupe_daily_77, aes(x= daily_pcp, y = daily_vol)) +
 
 scatterplot
 
-## filter dataset from 2004-2014
+## filter dataset from 2008-2014
 wailupe_clean_daily <- wailupe_daily_77 %>%
-  filter(date > "2004-01-01",
+  filter(date > "2008-01-01",
          date < "2014-12-31")
 
 ## look at histogram plot to investigate storm frequency over given time period
@@ -221,7 +221,7 @@ wailupe_13_investigate <- wailupe_tidy_77 %>%
 
 ```
 
-filter years with targeted storm events
+filter years with targeted storm events. DISCHARGE DATA IS FROM 10/25/10-2019!!!!
 
 ```{r}
 
@@ -249,6 +249,31 @@ wailupe_plot_05 <- ggplot(wailupe_05, aes(date, daily_pcp)) +
 
 wailupe_plot_05
 
+###############
+
+wailupe_08 <- wailupe_daily_77 %>%
+  filter(date >"2008-10-25",
+         date <"2008-12-31")
+
+wailupe_plot_08 <- ggplot(wailupe_08, aes(date, daily_pcp)) +
+  geom_line() +
+  xlab("Date") +
+  ylab("Precipitation (inches)")
+
+wailupe_plot_08
+
+###############
+
+wailupe_09 <- wailupe_daily_77 %>%
+  filter(date >"2009-01-01",
+         date <"2009-12-31")
+
+wailupe_plot_09 <- ggplot(wailupe_09, aes(date, daily_pcp)) +
+  geom_line() +
+  xlab("Date") +
+  ylab("Precipitation (inches)")
+
+wailupe_plot_09
 
 ###############
 
@@ -263,6 +288,18 @@ wailupe_plot_10 <- ggplot(wailupe_10, aes(date, daily_pcp)) +
 
 wailupe_plot_10
 
+###############
+
+wailupe_13 <- wailupe_daily_77 %>%
+  filter(date >"2013-01-01",
+         date <"2013-12-31")
+
+wailupe_plot_13 <- ggplot(wailupe_13, aes(date, daily_pcp)) +
+  geom_line() +
+  xlab("Date") +
+  ylab("Precipitation (inches)")
+
+wailupe_plot_13
 
 
 ```
@@ -333,5 +370,38 @@ storm_plot_10
 
 write.csv(wailupe_storm_10, file = "wailupe_storm_20101219_r.csv") 
 
+```
+
+Search for smaller storms ~3inches
+
+```{r}
+
+#2009 storm @ 2.8 inches
+wailupe_storm_09 <- wailupe_tidy_77 %>%
+  filter(date >"2009-03-13",
+         date <"2009-03-16")
+
+storm_plot_09 <- ggplot(wailupe_storm_09, aes(time, qpcp)) +
+  geom_point() +
+  xlab("Date") +
+  ylab("Precipitation (inches)")
+
+storm_plot_09
+
+write.csv(wailupe_storm_09, file = "wailupe_storm_20090314_r.csv") 
+
+#2013 storm @ 2.8 inches
+wailupe_storm_13 <- wailupe_tidy_77 %>%
+  filter(date >"2013-11-08",
+         date <"2013-11-11")
+
+storm_plot_13 <- ggplot(wailupe_storm_13, aes(time, qpcp)) +
+  geom_point() +
+  xlab("Date") +
+  ylab("Precipitation (inches)")
+
+storm_plot_13
+
+write.csv(wailupe_storm_09, file = "wailupe_storm_20131109_r.csv") 
 ```
 
