@@ -39,6 +39,8 @@ results_dry<- merge(subcatch, swm_results_dry, by = "subcatchment") %>%
 
 results_regression_dry<- lm(total_runoff_in ~Curve_Number + Slope + percent_imp + Area_sqft, data = results_dry)
 
+regress_dry_norm<- lm(runoff_normalized ~Curve_Number + Slope + percent_imp + Area_sqft, data = results_dry)
+
 runoff_imp_graph_dry<- results_dry %>% 
   ggplot(aes(x=percent_imp, y=total_runoff_in))+
   geom_point(aes(color=Urbanization_level))+
@@ -81,7 +83,7 @@ results_wet<- merge(subcatch, swm_results_wet, by = "subcatchment") %>%
            )
 
 
-results_regression_wet<- lm(total_runoff_in ~Curve_Number + Slope + percent_imp + Area_sqft, data = results_dry)
+results_regression_wet<- lm(total_runoff_in ~Curve_Number + Slope + percent_imp + Area_sqft, data = results_wet)
 
 runoff_imp_graph_wet<- results_wet %>% 
   ggplot(aes(x=percent_imp, y=total_runoff_in))+
@@ -92,7 +94,16 @@ runoff_imp_graph_wet<- results_wet %>%
   scale_color_manual(name= "Urbanization Level", values= c("darkgreen", "darkseagreen", "darkgoldenrod1"))+
   theme_classic()
 
+runoff_norm_wet<- results_wet %>% 
+  ggplot(aes(x=percent_imp, y=runoff_normalized))+
+  geom_point(aes(color=Urbanization_level))+
+  labs(x= "Percent Impervious of Subcatchment", y= "Total Simulated Runoff Normalized by Area (inches/sqft)")+
+  scale_y_continuous(expand= c(0,0))+
+  scale_x_continuous(limits= c(0,80), breaks= seq(0,80, by= 10),expand= c(0,0))+
+  scale_color_manual(name= "Urbanization Level", values= c("darkgreen", "darkseagreen", "darkgoldenrod1"))+
+  theme_classic()
 
+runoff_norm_wet
 runoff_imp_graph_wet
 
 
