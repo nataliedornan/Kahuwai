@@ -328,6 +328,8 @@ storm_plot_09
 ggsave("storm_plot_09.pdf", width = 6, height =4)
 ggsave("storm_plot_09.png", width = 6, height =4)
 
+write.csv(wailupe_storm_09, file = "wailupe_storm_20090314_r.csv") 
+
 ```
 
 

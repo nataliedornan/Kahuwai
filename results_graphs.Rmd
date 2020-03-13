@@ -45,13 +45,18 @@ runoff_imp_graph_dry<- results_dry %>%
   ggplot(aes(x=percent_imp, y=total_runoff_in))+
   geom_point(aes(color=Urbanization_level))+
   labs(x= "Percent Impervious of Subcatchment", y= "Total Simulated Runoff (inches)")+
-  scale_y_continuous(limits= c(0,7), breaks= seq(0,7, by= 1),expand= c(0,0))+
+  scale_y_continuous(limits= c(0,7), breaks= seq(0,7, by= 1),expand= c(0,0.08))+
   scale_x_continuous(limits= c(0,80), breaks= seq(0,80, by= 10),expand= c(0,0))+
   scale_color_manual(name= "Urbanization Level", values= c("darkgreen", "darkseagreen", "darkgoldenrod1"))+
   theme_classic()
 
 
 runoff_imp_graph_dry
+
+
+## save runoff vs. impervious graph
+ggsave("runoff_imp_dry.pdf", width = 8, height =4)
+ggsave("runoff_imp_dry.png", width = 8, height =4)
 
 library(stargazer)
 
@@ -89,7 +94,7 @@ runoff_imp_graph_wet<- results_wet %>%
   ggplot(aes(x=percent_imp, y=total_runoff_in))+
   geom_point(aes(color=Urbanization_level))+
   labs(x= "Percent Impervious of Subcatchment", y= "Total Simulated Runoff (inches)")+
-  scale_y_continuous(limits= c(0,3), breaks= seq(0,2.5, by= 0.5),expand= c(0,0))+
+  scale_y_continuous(limits= c(0,3), breaks= seq(0,2.5, by= 0.5),expand= c(0,0.08))+
   scale_x_continuous(limits= c(0,80), breaks= seq(0,80, by= 10),expand= c(0,0))+
   scale_color_manual(name= "Urbanization Level", values= c("darkgreen", "darkseagreen", "darkgoldenrod1"))+
   theme_classic()
@@ -106,6 +111,9 @@ runoff_norm_wet<- results_wet %>%
 runoff_norm_wet
 runoff_imp_graph_wet
 
+##save runoff vs. impervious graph
+ggsave("runoff_imp_wet.pdf", width = 8, height =4)
+ggsave("runoff_imp_wet.png", width = 8, height =4)
 
 
 regress_table_wet<- stargazer(results_regression_wet, type ="html", digits= 2, 
@@ -114,8 +122,6 @@ regress_table_wet<- stargazer(results_regression_wet, type ="html", digits= 2,
                        omit.stat = c("rsq"))
 
 regress_table_wet
-
-
 
 
 ```
@@ -169,6 +175,10 @@ calibrate_graph<- discharge %>%
 
 calibrate_graph  
 
+##save discharge graphs from the 2010 "dry" storm
+ggsave("discharge10.pdf", width = 8, height =4)
+ggsave("dischage10.png", width = 8, height =4)
+
 results_table<- results_wet %>% 
   group_by(Urbanization_level) %>% 
   summarize(
@@ -212,7 +222,6 @@ sim09<- discharge09$simulated_flow_cfs
 obs09<- discharge09$discharge_obs_cfs
 
 
-
 sutcliffe09<- NSE(sim09, obs09, na.rm=TRUE, FUN=NULL, epsilon=c("Pushpalatha2012"))
 
 sutcliffe09
@@ -231,11 +240,15 @@ calibrate_graph09<- discharge09 %>%
   theme_classic()+
   labs(x="Time (hours)", y="Discharge (cfs)")+
   scale_y_continuous(limits= c(0,275), breaks= seq(0,250, by= 25),expand= c(0,0))+
-  scale_x_continuous(limits= c(0,22), breaks= seq(0,22, by= 2),expand= c(0,0))+
-  annotate("text", label= "Observed", x=19.5, y=65, size=3.5)+
-  annotate("text", label= "Simulated", x=19.5, y=25, size=3.5)
- 
+  scale_x_continuous(limits= c(0,12), breaks= seq(0,12, by= 2),expand= c(0,0))+
+  annotate("text", label= "Observed", x=8, y=150, size=3.5)+
+  annotate("text", label= "Simulated", x=8, y=77, size=3.5)
+
 
 calibrate_graph09  
+
+##save discharge graphs from the 2009 "wet" storm
+ggsave("discharge09.pdf", width = 8, height =4)
+ggsave("dischage09.png", width = 8, height =4)
 ```
 
