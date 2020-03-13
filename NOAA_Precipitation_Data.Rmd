@@ -218,7 +218,7 @@ wailupe_08 <- wailupe_daily_77 %>%
          date <"2008-12-31")
 
 wailupe_plot_08 <- ggplot(wailupe_08, aes(date, daily_pcp)) +
-  geom_line() +
+  geom_col() +
   xlab("Date") +
   ylab("Precipitation (inches)")
 
@@ -231,7 +231,7 @@ wailupe_09 <- wailupe_daily_77 %>%
          date <"2009-12-31")
 
 wailupe_plot_09 <- ggplot(wailupe_09, aes(date, daily_pcp)) +
-  geom_line() +
+  geom_col() +
   xlab("Date") +
   ylab("Precipitation (inches)")
 
@@ -244,7 +244,7 @@ wailupe_10 <- wailupe_daily_77 %>%
          date <"2010-12-31")
 
 wailupe_plot_10 <- ggplot(wailupe_10, aes(date, daily_pcp)) +
-  geom_line() +
+  geom_col() +
   xlab("Date") +
   ylab("Precipitation (inches)")
 
@@ -257,7 +257,7 @@ wailupe_13 <- wailupe_daily_77 %>%
          date <"2013-12-31")
 
 wailupe_plot_13 <- ggplot(wailupe_13, aes(date, daily_pcp)) +
-  geom_line() +
+  geom_col() +
   xlab("Date") +
   ylab("Precipitation (inches)")
 
@@ -274,7 +274,7 @@ wailupe_storm_10_test <- wailupe_tidy_77 %>%
   filter(date == "2010-12-19")
 
 storm_plot_10_test <- ggplot(wailupe_storm_10_test, aes(time, qpcp)) +
-  geom_point() +
+  geom_col() +
   xlab("Time") +
   ylab("Precipitation (inches)") +
   theme_classic()
@@ -289,15 +289,20 @@ wailupe_storm_10 <- wailupe_tidy_77 %>%
   filter(date > "2010-12-18",
          date < "2010-12-20")
 
-storm_plot_10 <- ggplot(wailupe_storm_10, aes(time, qpcp)) +
-  geom_point() +
-  xlab("Time") +
-  ylab("Precipitation (inches)") +
+wailupe_storm_10$datetime <- as.POSIXct(paste0("2010-12-19 ", wailupe_storm_10$time), tz = "GMT")
+
+storm_plot_10 <- wailupe_storm_10 %>%
+  ggplot(aes(x=datetime, y=qpcp)) +
+  geom_col() +
+  labs(x= "Time (hour)", y= "Precipitation (inches)") +
+  scale_y_continuous(limits= c(0,0.5), breaks= seq(0,0.5, by= .1),expand= c(0,0))+
+  scale_x_datetime(date_labels = "%H:%M", date_breaks = "2 hour")+
   theme_classic()
 
 storm_plot_10
 
 write.csv(wailupe_storm_10, file = "wailupe_storm_20101219_r.csv") 
+
 ```
 
 Another smaller storm event with associated discharge data for model validation
@@ -306,12 +311,17 @@ Another smaller storm event with associated discharge data for model validation
 #2009 storm @ 2.8 inches
 wailupe_storm_09 <- wailupe_tidy_77 %>%
   filter(date >"2009-03-13",
-         date <"2009-03-16")
+         date <"2009-03-15")
 
-storm_plot_09 <- ggplot(wailupe_storm_09, aes(time, qpcp)) +
-  geom_point() +
-  xlab("Date") +
-  ylab("Precipitation (inches)")
+wailupe_storm_09$datetime09 <- as.POSIXct(paste0("2009-03-14",wailupe_storm_09$time), tz = "GMT")
+
+storm_plot_09 <- wailupe_storm_09 %>%
+  ggplot(aes(x=datetime09, y=qpcp)) +
+  geom_col() +
+  labs(x= "Time (hour)", y= "Precipitation (inches)") +
+  scale_y_continuous(limits= c(0,0.5), breaks= seq(0,0.5, by= .1),expand= c(0,0))+
+  scale_x_datetime(date_labels = "%H:%M", date_breaks = "2 hour")+
+  theme_classic()
 
 storm_plot_09
 
