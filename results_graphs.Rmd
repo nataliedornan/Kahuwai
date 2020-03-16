@@ -11,6 +11,16 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r}
 library(tidyverse)
+
+#For spatial maps
+library(sf)
+library(tmap)
+library(tmaptools)
+library(here)
+library(janitor) 
+library(paletteer)
+library(ggthemes)
+
 ```
 
 
@@ -271,6 +281,148 @@ write.csv(wet_runoff_coef_top_10,"C:\\Users\\eleon\\Documents\\Bren\\Malama Maun
 write.csv(dry_peak_top_10,"C:\\Users\\eleon\\Documents\\Bren\\Malama Maunalua\\dry_peak_top_15.csv", row.names = FALSE)
 
 write.csv(wet_peak_top_10,"C:\\Users\\eleon\\Documents\\Bren\\Malama Maunalua\\wet_peak_top_15.csv", row.names = FALSE)
+
+```
+
+```{r}
+#Hotspot maps
+tmap_mode('plot')
+
+#Dry results
+subcatch_dry <- read_sf(dsn = here("wailupe_subcatch_outlines"), layer = "subcatch_areaupdate") %>%
+  st_transform(crs = 4326) %>% 
+  clean_names() %>% 
+  select(subcatchment = objectid_1) %>% 
+  merge(results_dry) %>% 
+  filter(subcatchment != "5")
+
+
+#  Total volume hotspots  
+hotspots_dry_total <- tm_basemap("OpenStreetMap.Mapnik") +
+  tm_shape(subcatch_dry) +
+  tm_polygons("runoff_coeff", alpha = 0.8, palette = "Blues", style = "cont", n=8, legend.hist = TRUE, title = "Runoff Coefficient") +
+  tm_layout(inner.margins=c(.05, .05, .05, .47), legend.position =  c("right","top"), legend.title.size = 1.4, legend.text.size = 1) +
+  tm_text("subcatchment", size = 0.3)
+hotspots_dry_total
+
+tmap_save(hotspots_dry_total, "hotspots_dry_total.png")
+
+#  Peak flow hotspots
+hotspots_dry_peak <- tm_basemap("OpenStreetMap.Mapnik") +
+  tm_shape(subcatch_dry) +
+  tm_polygons("peak_runoff_cfs", alpha = 0.75, palette = "Greens", style = "cont", n=8, legend.hist = TRUE, title = "Peak Discharge (cfs)") +
+  tm_layout(inner.margins=c(.05, .05, .05, .47), legend.position =  c("right","top"),legend.title.size = 1.4, legend.text.size = 1, legend.width  = 1) +
+  tm_text("subcatchment", size = 0.3)
+hotspots_dry_peak
+
+tmap_save(hotspots_dry_peak, "hotspots_dry_peak.png")
+
+#Wet results
+subcatch_wet <- read_sf(dsn = here("wailupe_subcatch_outlines"), layer = "subcatch_areaupdate") %>%
+  st_transform(crs = 4326) %>% 
+  clean_names() %>% 
+  select(subcatchment = objectid_1) %>% 
+  merge(results_wet) %>% 
+   filter(subcatchment != "5")
+
+#  Total volume hotspots  
+hotspots_wet_total <- tm_basemap("OpenStreetMap.Mapnik") +
+  tm_shape(subcatch_wet) +
+  tm_polygons("runoff_coeff", alpha = 0.8, palette = "Blues", style = "cont", n=8, legend.hist = TRUE, title = "Runoff Coefficient") +
+  tm_layout(inner.margins=c(.05, .05, .05, .47), legend.position =  c("right","top"),legend.title.size = 1.4, legend.text.size = 1, legend.width  = 1) +
+  tm_text("subcatchment", size = 0.3)
+hotspots_wet_total
+
+tmap_save(hotspots_wet_total, "hotspots_wet_total.png")
+
+
+#  Peak flow hotspots
+hotspots_wet_peak <- tm_basemap("OpenStreetMap.Mapnik") +
+  tm_shape(subcatch_wet) +
+  tm_polygons("peak_runoff_cfs", alpha = 0.75, palette = "Greens", style = "cont", n=8, legend.hist = TRUE, title = "Peak Discharge (cfs)") +
+  tm_layout(inner.margins=c(.05, .05, .05, .47), legend.position =  c("right","top"), legend.title.size = 1.4, legend.text.size = 1, legend.width  = 1) +
+  tm_text("subcatchment", size = 0.3)
+hotspots_wet_peak
+
+tmap_save(hotspots_wet_peak, "hotspots_wet_peak.png")
+
+
+#Top 15 of total volume
+top15_dry_total <- subcatch_dry %>% 
+  arrange(-runoff_coeff) %>% 
+  head(15)
+
+top15_wet_total <- subcatch_wet %>% 
+  arrange(-runoff_coeff) %>% 
+  head(15)
+
+common_total_vector <- as.data.frame(intersect(top15_dry_total$subcatchment, top15_wet_total$subcatchment)) 
+colnames(common_total_vector) <- c("subcatchment")
+
+
+common_total <- subcatch_dry %>% 
+  mutate(hotspot = case_when(subcatchment == "45"| 
+  subcatchment =="47"|
+  subcatchment == "60" |
+  subcatchment == "67" | 
+  subcatchment == "71"| 
+  subcatchment == "40" |
+  subcatchment =="54" |
+  subcatchment == "51"| 
+  subcatchment == "59"| 
+  subcatchment == "46" |
+  subcatchment == "29"| 
+  subcatchment == "68" | 
+  subcatchment == "21" ~ "Hotspot"))
+
+common_total$hotspot <- as.factor(common_total$hotspot)
+
+top15_total_map <- tm_basemap("Hydda.Base") +
+  tm_shape(common_total) +
+  tm_polygons("hotspot", title = "Legend", textNA = "Subcatchment", palette="#045a8d", alpha = 0.8)+
+  tm_layout(inner.margins=c(.05, .05, .05, .47), legend.position =  c("right","top"),legend.title.size = 1.4, legend.text.size = 1, legend.width  = 1) +
+  tm_text("subcatchment", size = 0.3)
+top15_total_map
+
+tmap_save(top15_total_map, "top15_total_map.png")
+
+#Top 15 of peak volume
+
+top15_dry_peak <- subcatch_dry %>% 
+  arrange(-peak_runoff_cfs) %>% 
+  head(15)
+
+top15_wet_peak <- subcatch_wet %>% 
+  arrange(-peak_runoff_cfs) %>% 
+  head(15)
+
+common_peak_vector <- as.data.frame(intersect(top15_dry_peak$subcatchment, top15_wet_peak$subcatchment)) 
+colnames(common_peak_vector) <- c("subcatchment")
+
+common_peak <- subcatch_dry %>% 
+  mutate(hotspot = case_when(
+  subcatchment == "2"| 
+  subcatchment =="3"|
+  subcatchment == "11" |
+  subcatchment == "28" | 
+  subcatchment == "38"| 
+  subcatchment == "42" |
+  subcatchment =="62" |
+  subcatchment == "63"| 
+  subcatchment == "74"| 
+  subcatchment == "78" |
+  subcatchment == "89" ~ "Hotspot"))
+
+common_peak$hotspot <- as.factor(common_peak$hotspot)
+
+top15_peak_map <- tm_basemap("Hydda.Base") +
+  tm_shape(common_peak) +
+  tm_polygons("hotspot", title = "Legend", textNA = "Subcatchment", palette="#006d2c", alpha = 0.8)+
+  tm_layout(inner.margins=c(.05, .05, .04, .4), legend.position =  c("right","top"), legend.title.size = 1.4, legend.text.size = 1, legend.width  = 1) +
+  tm_text("subcatchment", size = 0.3)
+top15_peak_map
+
+tmap_save(top15_peak_map, "top15_peak_map.png")
 
 ```
 
