@@ -9,13 +9,14 @@ knitr::opts_chunk$set(echo = TRUE)
 
 Load packages
 ```{r}
+library(tidyverse)
 library(sf)
 library(tmap)
 library(tmaptools)
 library(here)
 library(janitor) 
-library(paletteer)
 library(ggthemes)
+library(ggmap)
 ```
 
 Hotspot maps
@@ -175,5 +176,92 @@ top20_peak_map <- tm_basemap("Hydda.Base") +
 
 tmap_save(top20_peak_map, "top20_peak_map.png")
 
+```
+
+Satellite maps
+```{r}
+
+ph_basemap <- get_map(location= c(lon = -157.755877, lat = 21.292075), zoom=14, maptype = 'terrain')
+ggmap(ph_basemap) +
+    geom_sf(data = philly_crimes_sf, aes(fill=homic_rate_cat), inherit.aes = FALSE) +
+    scale_fill_brewer(palette = "OrRd") +
+  +
+    coord_sf(crs = st_crs(4326))
+
+maunalua_basemap <- get_googlemap(center = c(lon = -157.755877, lat = 21.292075),
+  zoom = 12, maptype = "satellite") 
+  
+  ggmap(maunalua_basemap)
+
+
+
+satellite_peak <- ggplot(data = common_peak) +
+  geom_sf(aes(fill = subcatchment),color = NA) + 
+  scale_fill_paletteer_c("viridis::viridis") +
+  theme_minimal()
+satellite_peak
+
+# Let's crop it: 
+world_base +
+  coord_sf(xlim = c(-20, 50), ylim = c(-40, 40), expand = FALSE)
+
+
+
+```
+
+Satellite maps google earth
+```{r}
+#Keep the common hotspots only
+common_peak_only <- subcatch_dry %>% 
+  filter(
+  subcatchment == "1" | 
+  subcatchment == "2" |
+  subcatchment == "3" |
+  subcatchment == "7" | 
+  subcatchment == "11" | 
+  subcatchment == "23" |
+  subcatchment == "28" |
+  subcatchment == "38" | 
+  subcatchment == "42" | 
+  subcatchment == "58" |
+  subcatchment == "62" | 
+  subcatchment == "63" | 
+  subcatchment == "74" | 
+  subcatchment == "75" | 
+  subcatchment == "76" | 
+  subcatchment == "78" | 
+  subcatchment == "79" | 
+  subcatchment == "89" | 
+  subcatchment == "94" )
+
+#Export as .shp
+st_write(common_peak_only, "common_peak.shp")
+
+
+#Keep the common hotspots only
+common_total_only <- subcatch_dry %>% 
+  filter(
+  subcatchment == "21" | 
+  subcatchment == "22" |
+  subcatchment == "23" |
+  subcatchment == "29" | 
+  subcatchment == "40" | 
+  subcatchment == "45" |
+  subcatchment == "46" |
+  subcatchment == "47" | 
+  subcatchment == "49" | 
+  subcatchment == "51" |
+  subcatchment == "54" | 
+  subcatchment == "59" | 
+  subcatchment == "60" | 
+  subcatchment == "63" | 
+  subcatchment == "65" | 
+  subcatchment == "67" | 
+  subcatchment == "68" | 
+  subcatchment == "71" | 
+  subcatchment == "89")
+
+#Export as .shp
+st_write(common_total_only, "common_total.shp")
 ```
 
