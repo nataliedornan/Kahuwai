@@ -264,4 +264,3 @@ common_total_only <- subcatch_dry %>%
 #Export as .shp
 st_write(common_total_only, "common_total.shp")
 ```
-
