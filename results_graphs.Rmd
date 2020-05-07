@@ -11,6 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r}
 library(tidyverse)
+
 ```
 
 
@@ -39,7 +40,8 @@ results_dry<- merge(subcatch, swm_results_dry, by = "subcatchment") %>%
 
 results_regression_dry<- lm(total_runoff_in ~Curve_Number + Slope + percent_imp + Area_sqft, data = results_dry)
 
-regress_dry_norm<- lm(runoff_normalized ~Curve_Number + Slope + percent_imp + Area_sqft, data = results_dry)
+
+
 
 runoff_imp_graph_dry<- results_dry %>% 
   ggplot(aes(x=percent_imp, y=total_runoff_in))+
@@ -226,20 +228,20 @@ sutcliffe09<- NSE(sim09, obs09, na.rm=TRUE, FUN=NULL, epsilon=c("Pushpalatha2012
 
 sutcliffe09
 
-#write.csv(discharge,"C:\\Users\\eleon\\Documents\\Bren\\Malama Maunalua\\discharge_obv_sim1.csv", row.names = FALSE)
+write.csv(discharge09,"C:\\Users\\eleon\\Documents\\Bren\\Malama Maunalua\\discharge_obv_sim09.csv", row.names = FALSE)
 
 graph09<- ggplot(discharge09, aes(x=discharge_obs_cfs, simulated_flow_cfs))+
   geom_point()
 
 graph
-  
+   
 calibrate_graph09<- discharge09 %>% 
   ggplot()+
   geom_line(aes(x=time_step, y=discharge_obs_cfs), color="darkseagreen")+
   geom_line(aes(x=time_step, y=simulated_flow_cfs), color= "darkgoldenrod1")+
   theme_classic()+
   labs(x="Time (hours)", y="Discharge (cfs)")+
-  scale_y_continuous(limits= c(0,275), breaks= seq(0,250, by= 25),expand= c(0,0))+
+  scale_y_continuous(limits= c(0,300), breaks= seq(0,300, by= 25),expand= c(0,0))+
   scale_x_continuous(limits= c(0,12), breaks= seq(0,12, by= 2),expand= c(0,0))+
   annotate("text", label= "Observed", x=8, y=150, size=3.5)+
   annotate("text", label= "Simulated", x=8, y=77, size=3.5)
@@ -248,7 +250,27 @@ calibrate_graph09<- discharge09 %>%
 calibrate_graph09  
 
 ##save discharge graphs from the 2009 "wet" storm
-ggsave("discharge09.pdf", width = 8, height =4)
-ggsave("dischage09.png", width = 8, height =4)
+ggsave("discharge09_final.pdf", width = 8, height =4)
+ggsave("dischage09_final.png", width = 8, height =4)
 ```
 
+```{r}
+#picking top 10 subcatchments 
+
+dry_runoff_coef_top_10 <- top_n(results_dry, 15, runoff_coeff)
+
+dry_peak_top_10 <-top_n(results_dry, 15, peak_runoff_cfs)
+
+wet_runoff_coef_top_10 <- top_n(results_wet, 15, runoff_coeff)
+
+wet_peak_top_10 <- top_n(results_wet, 15, peak_runoff_cfs)
+
+write.csv(dry_runoff_coef_top_10,"C:\\Users\\eleon\\Documents\\Bren\\Malama Maunalua\\dry_runoff_top_15.csv", row.names = FALSE)
+
+write.csv(wet_runoff_coef_top_10,"C:\\Users\\eleon\\Documents\\Bren\\Malama Maunalua\\wet_runoff_top_15.csv", row.names = FALSE)
+
+write.csv(dry_peak_top_10,"C:\\Users\\eleon\\Documents\\Bren\\Malama Maunalua\\dry_peak_top_15.csv", row.names = FALSE)
+
+write.csv(wet_peak_top_10,"C:\\Users\\eleon\\Documents\\Bren\\Malama Maunalua\\wet_peak_top_15.csv", row.names = FALSE)
+
+```
