@@ -1,0 +1,347 @@
+---
+title: "stormwater_network_wailupe_final"
+author: "Erica Johnson"
+date: "5/7/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+Read libraries and data file here
+```{r, include=FALSE}
+#Libraries
+library(tidyverse)
+library(dplyr)
+library(data.table)
+library(geosphere)
+library(janitor)
+library(kableExtra)
+
+
+#Data with clean names
+data <- read_csv("stre_cond_struc_wailupe.csv") %>% clean_names()
+
+```
+
+Select columns with the data we need to use. Rename them for easy reference.
+```{r}
+network <- data %>% 
+  select(
+  objectid,
+  point_x,
+  point_y,
+  elevation,
+  subcatch_r,
+  roughness,
+  type,
+  diameter,
+  width,
+  height,
+  type_1
+  ) %>% 
+  rename(
+    name = objectid,
+    x = point_x,
+    y = point_y,
+    subc = subcatch_r,
+    elevation = elevation,
+    shape = type,
+    structure = type_1
+    ) %>% 
+  mutate (shape = str_replace_all(shape, "Reinforced Concrete Pipe", "CIRCULAR")) %>% 
+  mutate (shape = str_replace_all(shape, "Box Culvert", "RECT_CLOSED")) %>% 
+  mutate (shape = str_replace_all(shape, "Channel", "TRAPEZOIDAL")) %>% 
+  mutate (shape = str_replace_all(shape, "Ditch", "RECT_OPEN")) %>% 
+  mutate (shape = str_replace_all(shape, "Other", "RECT_OPEN")) %>% 
+  distinct()
+
+#CHECK THESE VALUE WITH WAILUPE10 SWMM FILE
+
+#Add the rest of the columns we need. SWMM does not take "NA" the default blank value for R, so we populate columns with 0 for now.
+network$initflow <- 0
+network$maxflow <- 0
+network$length <- 0
+network$inoffset <- 0
+network$outoffset <- 0
+```
+
+"Length" provided by USGS is distance between xy points. This "length"" is not the actual length of the conduit because it does not take into consideration height (xyz), so we will use the difference between lower distance between xy points calcualte the actual length further down in the code.  
+
+We will also re-calculate distance between xy points because different sources return  different values for some of the conduits and some conduits need to have this distance calculated anyway because it is blank. 
+
+Step 1 - Create unique names for nodes with the same x and y coordinates, then arrange conduit by descending elevation.
+
+```{r}
+#Index xy coordinates with unique IDs if different, same IDs if repeated
+nodes <- network %>% 
+  mutate(
+    node = group_indices(
+      network, x, y
+      )
+    )
+
+#arrange by conduit name and descending elevation
+arrange <- nodes[
+  with(
+  nodes, order(
+    name, 
+    -elevation, 
+    na.last=FALSE)
+  ),
+  ]
+
+```
+
+
+2. Arrange and reshape data 
+Note: each conduit has start and end coordinates and nodes, - so there are duplicate rows for each conduit. We want to reshape this data to have both xy and nodes in the same row.
+```{r}
+reshape <- arrange %>% 
+   mutate(
+    con1 = row_number()
+    ) %>% 
+  mutate(
+      con2 = row_number()-1
+      )
+
+con1 <- reshape %>%  select(
+  con1, 
+  subc, 
+  x, 
+  y, 
+  elevation, 
+  node, 
+  roughness,
+  shape,
+  diameter,
+  width,
+  height)
+
+
+con2 <- reshape %>%  select(
+  con2,
+  subc, 
+  x, 
+  y, 
+  elevation, 
+  node) %>% 
+  rename(
+    con1 = con2
+    )
+
+merge<- merge(con1, con2, by = "con1") 
+```
+
+3. Length
+
+We must now calculate the length of the conduits using the following steps:
+a. Find distance "length" between xy coordinates of each conduit using geosphere.
+b. Use difference in elevation to calculate height
+c. Use pythag. theorem to calculate length
+
+```{r}
+#part a -  distance (adjust code based on number of pairs. This dataset has 18 based on the longest conduit)
+dist <- merge %>%  
+  rowwise(
+  ) %>% 
+  mutate (
+    dist_m = distm(c(x.x, y.x), 
+                   c(x.y, y.y), 
+                   fun = distHaversine
+                   )
+    ) %>% 
+  mutate(
+    dist_ft = dist_m*3.28084
+    )
+
+#part b and c - height then length
+lengths <- dist %>%  
+  mutate (
+    length = sqrt(
+      (dist_ft)^2 + (elevation.x-elevation.y)^2)
+          )%>% 
+  rename (
+    name = con1,
+    from_node = node.x,
+    to_node = node.y,
+    subc = subc.x
+  )
+
+```
+
+4. file output for conduits
+[CONDUITS]								
+;;Name  From Node To Node  Length Roughness InOffset  OutOffset InitFlow  MaxFlow
+;;---------- ---------- ---------- ---------- ---------- ---------- ---------- ---------- ----------
+
+Use roughness value 0.01, for concrete pipes found in Appendix A-8 pg. 184 of EPA manual
+```{r}
+conduits <- lengths %>% 
+  mutate(
+    roughness = ifelse(is.na(roughness), 
+                       0.01, 
+                       roughness
+                       )
+    ) %>% 
+  select(
+    name,
+    from_node, 
+    to_node,
+    length, 
+    roughness 
+    ) 
+
+#CHECK THESE VALUES WITH WAILUPE10 SWMM FILE
+conduits$inoffset <- 0
+conduits$outoffset <- 0
+conduits$initflow <- 0
+conduits$maxflow <- 0
+
+
+write.csv(conduits,"conduits.csv", row.names = FALSE)
+```
+
+5. file output for lengths
+[XSECTIONS]							
+;;Link  Shape	Geom1	Geom2	Geom3 Geom4 Barrels Culvert   
+;;--------------	------------	----------------	----------
+
+a - concrete pipe dimensions
+```{r}
+pipes<- lengths %>% 
+  filter(
+    shape == "CIRCULAR"
+    ) %>% 
+  rename(
+    geom1 = diameter,
+    link = name
+    ) %>%
+  mutate(
+    geom1 = ifelse(is.na(geom1), "23", geom1)
+    ) %>% 
+  mutate(
+    geom1 = ifelse((geom1=="Other"), "23", (geom1))
+    )%>% 
+  select(
+    link, 
+    shape,
+    subc,
+    length,
+    geom1
+  )
+pipes$geom2 <- 0
+pipes$geom3 <- 0
+pipes$geom4 <- 0
+pipes$barrels <- NA
+pipes$culvert <- 0
+```
+
+b - box culverts, ditches, and "other" conduit dimensions
+```{r}
+ditch_box <- lengths %>% 
+  filter(
+    shape == "RECT_CLOSED" | shape == "RECT_OPEN"
+    ) %>% 
+  rename (
+    geom1 = width, 
+    geom2 = height,
+    link = name
+    ) %>% 
+  mutate(
+    geom1 = ifelse(is.na(geom1), 5, geom1)
+    ) %>% 
+  mutate(geom2 = ifelse(is.na(geom2), 5, geom2)
+         ) %>% 
+  select( 
+    link, 
+    shape, 
+    subc,
+    length,
+    geom1,
+    geom2
+    
+  )
+ditch_box$geom3 <- 0
+ditch_box$geom4 <- 0
+ditch_box$barrels <- NA
+ditch_box$culvert <- 0
+```
+
+
+
+LEFT OFF HERE. ALL STREAMS ARE BLANK.
+
+
+c - channel (channelized stream) dimenssions
+```{r}
+channel <- lengths %>% 
+  filter(
+    shape == NA
+    ) %>% 
+  rename(
+    geom1 = width, 
+    geom2 = height,
+    link = name
+    ) %>% 
+  mutate(
+    geom1 = ifelse(is.na(geom1), 30, geom1)
+    ) %>% 
+  mutate(
+    geom2 = ifelse(is.na(geom2), 10, geom2)
+    ) %>% 
+  select(
+     link, 
+    shape,
+    subc,
+    length,
+    geom1,
+    geom2
+    )
+#Geom3 and Geom4 are side lopes, which literature indicate vary from 1/1 to 1/2.  Ive seen side slopes perpendicular to the ground, especially where homes are built.
+channel$geom3 <- 1
+channel$geom4 <- 1
+channel$barrels <- 1
+channel$culvert <- 0
+```
+e- bind all tables
+
+```{r}
+xsections_df <- rbind(pipes, ditch_box, channel) %>% select (link, shape, geom1, geom2, geom3, geom4, barrels, culvert, subc, length) %>%  distinct(link, shape, geom1, geom2, .keep_all = TRUE)
+
+xsections <- rbind(pipes, ditch_box, channel) %>% select (link, shape, geom1, geom2, geom3, geom4, barrels, culvert) %>%  distinct(link, shape, geom1, geom2, .keep_all = TRUE)
+
+write.csv(xsections,"xsections.csv", row.names = FALSE)
+```
+
+8. Junctions and coordinates/vertices
+
+[JUNCTIONS]					
+;;Name  Elevation MaxDepth  InitDepth SurDepth  Aponded   
+;;--------------	----------	----------	----------	
+```{r}
+
+junctions <- conduit_assign %>% select(node1, elevation) %>% rename(name = node1)
+junctions$maxdepth <- 0
+junctions$initdepth <- 0
+junctions$surdepth <- 0
+junctions$aponded <- 0
+
+#keep structure type in here so we can designate which junctions are outfalls
+
+write.csv(junctions,"junctions.csv", row.names = FALSE)
+```
+
+[COORDINATES]		
+;;Node          	X-Coord           	Y-Coord           
+;;--------------	------------------	------------------
+
+SWMM takes x and y that are in decimal degrees  (lat and long).
+```{r}
+coordinates <- conduit_assign %>% select(node1, x, y) %>% rename(x_coord = x, y_coord =y)
+
+write.csv(coordinates,"coordinates.csv", row.names = FALSE)
+```
+We will have to decide which points are "vertices" which are points of change in conduit direction and which are "junctions" which are points where two or more conduits join.
