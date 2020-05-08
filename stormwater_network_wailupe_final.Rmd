@@ -266,20 +266,19 @@ ditch_box <- lengths %>%
   )
 ditch_box$geom3 <- 0
 ditch_box$geom4 <- 0
-ditch_box$barrels <- NA
+ditch_box$barrels <- 
 ditch_box$culvert <- 0
 ```
-
-
-
-LEFT OFF HERE. ALL STREAMS ARE BLANK.
 
 
 c - channel (channelized stream) dimenssions
 ```{r}
 channel <- lengths %>% 
   filter(
-    shape == NA
+    is.na(shape)
+    ) %>% 
+  mutate(
+    shape = ifelse(is.na(shape), "TRAPEZOIDAL", shape)
     ) %>% 
   rename(
     geom1 = width, 
@@ -303,18 +302,67 @@ channel <- lengths %>%
 #Geom3 and Geom4 are side lopes, which literature indicate vary from 1/1 to 1/2.  Ive seen side slopes perpendicular to the ground, especially where homes are built.
 channel$geom3 <- 1
 channel$geom4 <- 1
-channel$barrels <- 1
+channel$barrels <- 
 channel$culvert <- 0
 ```
 e- bind all tables
 
 ```{r}
-xsections_df <- rbind(pipes, ditch_box, channel) %>% select (link, shape, geom1, geom2, geom3, geom4, barrels, culvert, subc, length) %>%  distinct(link, shape, geom1, geom2, .keep_all = TRUE)
+xsections_df <- rbind(
+  pipes, 
+  ditch_box, 
+  channel
+  ) %>% 
+  select(
+    link, 
+    shape, 
+    geom1, 
+    geom2, 
+    geom3, 
+    geom4, 
+    barrels, 
+    culvert, 
+    subc, 
+    length
+    ) %>%  
+  distinct(
+    link, 
+    shape, 
+    geom1, 
+    geom2, 
+    .keep_all = TRUE
+    )
 
-xsections <- rbind(pipes, ditch_box, channel) %>% select (link, shape, geom1, geom2, geom3, geom4, barrels, culvert) %>%  distinct(link, shape, geom1, geom2, .keep_all = TRUE)
+xsections <- rbind(
+  pipes, 
+  ditch_box, 
+  channel
+  ) %>% 
+  select(
+    link, 
+    shape, 
+    geom1, 
+    geom2, 
+    geom3, 
+    geom4, 
+    barrels, 
+    culvert
+    ) %>% 
+  distinct(
+    link, 
+    shape, 
+    geom1, 
+    geom2, 
+    .keep_all = TRUE
+    )
 
 write.csv(xsections,"xsections.csv", row.names = FALSE)
 ```
+
+
+
+LEFT OFF HERE.
+
 
 8. Junctions and coordinates/vertices
 
@@ -323,7 +371,14 @@ write.csv(xsections,"xsections.csv", row.names = FALSE)
 ;;--------------	----------	----------	----------	
 ```{r}
 
-junctions <- conduit_assign %>% select(node1, elevation) %>% rename(name = node1)
+junctions <- conduit_assign %>% 
+  select(
+    node1, 
+    elevation
+    ) %>% 
+  rename(
+    name = node1
+    )
 junctions$maxdepth <- 0
 junctions$initdepth <- 0
 junctions$surdepth <- 0
@@ -340,7 +395,16 @@ write.csv(junctions,"junctions.csv", row.names = FALSE)
 
 SWMM takes x and y that are in decimal degrees  (lat and long).
 ```{r}
-coordinates <- conduit_assign %>% select(node1, x, y) %>% rename(x_coord = x, y_coord =y)
+coordinates <- conduit_assign %>% 
+  select(
+    node1, 
+    x, 
+    y
+    ) %>% 
+  rename(
+    x_coord = x, 
+    y_coord =y
+    )
 
 write.csv(coordinates,"coordinates.csv", row.names = FALSE)
 ```
