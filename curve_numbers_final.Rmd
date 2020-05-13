@@ -1,0 +1,26 @@
+---
+title: "curve_numbers_final"
+author: "Eleonore Durand"
+date: "May 13, 2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+#load necessary packages
+
+library(tidyverse)
+
+
+```
+
+
+```{r}
+soil_union <- read_csv("soil_land_union_maunalua.csv")
+
+
+```
+
