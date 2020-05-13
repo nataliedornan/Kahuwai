@@ -118,7 +118,8 @@ con1 <- reshape %>%  select(
   shape,
   diameter,
   width,
-  height)
+  height,
+  structure)
 
 
 con2 <- reshape %>%  select(
@@ -360,10 +361,6 @@ write.csv(xsections,"xsections.csv", row.names = FALSE)
 ```
 
 
-
-LEFT OFF HERE.
-
-
 8. Junctions and coordinates/vertices
 
 [JUNCTIONS]					
@@ -374,7 +371,8 @@ LEFT OFF HERE.
 junctions <- arrange %>% 
   select(
     node, 
-    elevation
+    elevation,
+    structure
     ) %>% 
   rename(
     name = node
@@ -400,10 +398,6 @@ coordinates <- arrange %>%
     node, 
     x, 
     y
-    ) %>% 
-  rename(
-    x_coord = x, 
-    y_coord =y
     )
 
 write.csv(coordinates,"coordinates.csv", row.names = FALSE)
