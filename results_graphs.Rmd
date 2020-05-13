@@ -73,7 +73,7 @@ regress_table_dry
 
 ```
 
-```{r}
+```{r, results= 'asis'}
 #wetsummary
 
 swm_results_wet<-read_csv("Wailupe10_wet_summary.csv")
@@ -202,6 +202,61 @@ table_pretty<-results_table %>%
   kable_styling(bootstrap_options = "striped")
 
 table_pretty
+
+results_table_dry<- results_dry %>% 
+  group_by(Urbanization_level) %>% 
+  summarize(
+    number_of_subcatch=length(subcatchment),
+    runoff_coefficient=round(mean(runoff_coeff),2), 
+    total_runoff_inches=round(mean(total_runoff_in),2), 
+    impervious_runoff_inches=round(mean(imperv_runoff_in),2), 
+    pervious_runoff_inches=round(mean(perv_runoff_in), 2),
+    total_infiltration_inches= round(mean(total_infil_in),2),
+    peak_runoff_cubicfs=round(mean(peak_runoff_cfs),2)
+    
+  )
+
+min_range_runoff_table_dry<- results_dry %>% 
+  summarize(
+  min_runoff_coeff = min(runoff_coeff), 
+  max_runoff_coeff = max(runoff_coeff), 
+  median_runoff_coeff = median(runoff_coeff), 
+  min_imp_runoff= min(imperv_runoff_in), 
+  max_imp_runoff= max(imperv_runoff_in), 
+  med_imp_runoff=median(imperv_runoff_in), 
+  min_per_runoff=min(perv_runoff_in), 
+  max_per_runoff=max(perv_runoff_in), 
+  med_per_runoff=median(perv_runoff_in)
+  ) %>% 
+  kable(col.names=c("Minimum Runoff Coefficient", "Maximum Runoff Coefficient", "Median Runoff Coefficient", "Minimum Impervious Runoff (in)", "Maximum Impervious Runoff (in)", "Median Impervious Runoff (In)", "Minimum Pervious Runoff (in)", "Maximum Pervious Runoff (in)", "Median Pervious Runoff (in)")) %>% 
+  kable_styling(bootstrap_options = "striped")
+
+min_range_runoff_table_dry
+  
+results_table_dry
+
+table_pretty_dry<-results_table_dry %>% 
+              kable(col.names=c("Urbanization Level","Number of Subcatchments", "Runoff Coefficient", "Total Runoff (in)", "Impervious Runoff (in)", "Pervious Runoff (in)","Total Infiltration (in)", "Peak Runoff (cfs)")) %>% 
+  kable_styling(bootstrap_options = "striped")
+
+table_pretty_dry
+
+min_range_runoff_table_wet<- results_wet %>% 
+  summarize(
+  min_runoff_coeff = min(runoff_coeff), 
+  max_runoff_coeff = max(runoff_coeff), 
+  median_runoff_coeff = median(runoff_coeff), 
+  min_imp_runoff= min(imperv_runoff_in), 
+  max_imp_runoff= max(imperv_runoff_in), 
+  med_imp_runoff=median(imperv_runoff_in), 
+  min_per_runoff=min(perv_runoff_in), 
+  max_per_runoff=max(perv_runoff_in), 
+  med_per_runoff=median(perv_runoff_in)
+  ) %>% 
+  kable(col.names=c("Minimum Runoff Coefficient", "Maximum Runoff Coefficient", "Median Runoff Coefficient", "Minimum Impervious Runoff (in)", "Maximum Impervious Runoff (in)", "Median Impervious Runoff (In)", "Minimum Pervious Runoff (in)", "Maximum Pervious Runoff (in)", "Median Pervious Runoff (in)")) %>% 
+  kable_styling(bootstrap_options = "striped")
+
+min_range_runoff_table_wet
                
 
 ```
@@ -255,7 +310,7 @@ ggsave("dischage09_final.png", width = 8, height =4)
 ```
 
 ```{r}
-#picking top 10 subcatchments 
+#picking top 15 subcatchments 
 
 dry_runoff_coef_top_10 <- top_n(results_dry, 15, runoff_coeff)
 
@@ -272,5 +327,56 @@ write.csv(wet_runoff_coef_top_10,"C:\\Users\\eleon\\Documents\\Bren\\Malama Maun
 write.csv(dry_peak_top_10,"C:\\Users\\eleon\\Documents\\Bren\\Malama Maunalua\\dry_peak_top_15.csv", row.names = FALSE)
 
 write.csv(wet_peak_top_10,"C:\\Users\\eleon\\Documents\\Bren\\Malama Maunalua\\wet_peak_top_15.csv", row.names = FALSE)
+
+```
+
+visualizing the sediment data from 09 
+
+```{r}
+
+sediment09<- read_csv("sediment_09_r.csv") %>% 
+  mutate(discharge_obs_cfs = 
+           case_when(time_step <0 ~ 0))
+
+discharge_4_graph<- read_csv("c35_observed_09.csv") %>% 
+  mutate(susp_sed = 
+           case_when(time_step <0 ~ 0))
+
+sedimentandflow<- rbind(sediment09, discharge_4_graph)
+
+sediment_flow_graph <- sedimentandflow %>% 
+  ggplot()+
+  geom_line(aes(x=time_step, y= discharge_obs_cfs), color= "blue")+
+  geom_point(aes(x=time_step, y=susp_sed), color= "red")+
+  theme_classic()
+
+sediment_flow_graph#still kinda ugly to look at, not sure it's worth all the trouble to overlay them on one graph
+
+obs_discharge_09<- discharge09 %>% 
+  ggplot(aes(x=time_step, y=discharge_obs_cfs)) +
+  geom_line(color= "darkseagreen")+
+  scale_x_continuous(expand = c(0,0), breaks= seq(0,11, by =1))+
+  scale_y_continuous(expand = c(0,0), breaks= seq(0,300, by=50))+
+  labs(x= "Time (hours)", y= "Observed Discharge (cfs)")+
+  theme_classic()
+
+obs_discharge_09
+
+ggsave("observed_discharge_09.pdf", width = 8, height =4)
+ggsave("observed_discharge_09_1.png", width = 8, height =4)
+
+sediment_graph<- sediment09 %>% 
+  ggplot()+
+  geom_point(aes(x=time_step, y=susp_sed), size= 5, color= "darkgoldenrod1")+
+  geom_segment(aes(x=time_step, xend=time_step, y=0, yend=susp_sed), size=1.5, color="darkgoldenrod1")+
+  scale_y_continuous(expand = c(0,0), breaks= seq(0,2500, by=250), limits= c(0, 2500))+
+  scale_x_continuous(expand = c(0,0), breaks= seq(0,14, by =1), limits=c(0,14))+
+  labs(x= "Time (hours)", y= "Suspended Sediments (mg/L)")+
+  theme_classic()
+
+sediment_graph
+
+ggsave("observed_sediment_09.pdf", width = 8, height =4)
+ggsave("observed_sediment_09_gold.png", width = 8, height =4)
 
 ```
