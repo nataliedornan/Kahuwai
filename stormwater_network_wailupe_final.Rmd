@@ -235,7 +235,7 @@ pipes<- lengths %>%
 pipes$geom2 <- 0
 pipes$geom3 <- 0
 pipes$geom4 <- 0
-pipes$barrels <- NA
+pipes$barrels <- 
 pipes$culvert <- 0
 ```
 
@@ -371,13 +371,13 @@ LEFT OFF HERE.
 ;;--------------	----------	----------	----------	
 ```{r}
 
-junctions <- conduit_assign %>% 
+junctions <- arrange %>% 
   select(
-    node1, 
+    node, 
     elevation
     ) %>% 
   rename(
-    name = node1
+    name = node
     )
 junctions$maxdepth <- 0
 junctions$initdepth <- 0
@@ -395,9 +395,9 @@ write.csv(junctions,"junctions.csv", row.names = FALSE)
 
 SWMM takes x and y that are in decimal degrees  (lat and long).
 ```{r}
-coordinates <- conduit_assign %>% 
+coordinates <- arrange %>% 
   select(
-    node1, 
+    node, 
     x, 
     y
     ) %>% 
@@ -408,4 +408,3 @@ coordinates <- conduit_assign %>%
 
 write.csv(coordinates,"coordinates.csv", row.names = FALSE)
 ```
-We will have to decide which points are "vertices" which are points of change in conduit direction and which are "junctions" which are points where two or more conduits join.
