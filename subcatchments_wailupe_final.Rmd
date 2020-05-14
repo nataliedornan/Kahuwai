@@ -70,7 +70,8 @@ subc_file <- subc %>%
     width, 
     slope, 
     curblen
-    ) 
+    ) %>% 
+  distinct(name, .keep_all = TRUE)
 
 write.csv(subc_file ,"subcatchments.csv", row.names = FALSE)
 ```
