@@ -18,7 +18,7 @@ library(dplyr)
 library(data.table)
 library(geosphere)
 library(janitor)
-library(kableExtra)
+
 
 
 #Data with clean names
@@ -100,18 +100,6 @@ unique$name <- gsub(
 
 ```
 
-```{r}
-#junctions (nodes)
-unique$bode <- apply(
-  unique,17,function(x) paste((x[19]), sep ="",(x[17]))
-  ) 
-
-#remove space in the name
-unique$node <- gsub(
-  '\\s+', '', unique$node
-  )
-
-```
 
 2. Arrange and reshape data 
 Note: each conduit has start and end coordinates and nodes, - so there are duplicate rows for each conduit. We want to reshape this data to have both xy and nodes in the same row.
@@ -396,11 +384,14 @@ write.csv(xsections,"xsections.csv", row.names = FALSE)
 ;;--------------	----------	----------	----------	
 ```{r}
 
-junctions <- arrange %>% 
+junctions <- unique %>% 
   select(
     node, 
     elevation,
     structure
+    ) %>% 
+  filter(
+    structure != "Inlet/Outlet"
     ) %>% 
   rename(
     name = node
@@ -410,9 +401,32 @@ junctions$initdepth <- 0
 junctions$surdepth <- 0
 junctions$aponded <- 0
 
-#keep structure type in here so we can designate which junctions are outfalls
-
+#filter for structure type in here so we can designate which junctions are outfalls
 write.csv(junctions,"junctions.csv", row.names = FALSE)
+```
+
+[OUFALLS]
+```{r}
+outfalls <- unique %>% 
+  select(
+    node, 
+    elevation,
+    structure
+    ) %>% 
+  filter(
+    structure == "Inlet/Outlet"
+    ) %>% 
+  rename(
+    name = node
+    )
+outfalls$maxdepth <- 0
+outfalls$initdepth <- 0
+outfalls$surdepth <- 0
+outfalls$aponded <- 0
+
+#you will need to check these structures in SWMM. If these structures are at an end of a conduit, then they are outfalls, otherwise you can quickly turn them back into a junction in SWMM.
+
+write.csv(outfalls,"outfalls.csv", row.names = FALSE)
 ```
 
 [COORDINATES]		
@@ -430,3 +444,9 @@ coordinates <- arrange %>%
 
 write.csv(coordinates,"coordinates.csv", row.names = FALSE)
 ```
+
+[VERTICES]
+```{r}
+
+```
+
