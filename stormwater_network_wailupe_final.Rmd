@@ -106,10 +106,6 @@ unique$node <- gsub(
 2. Arrange and reshape data 
 Note: each conduit has start and end coordinates and nodes, - so there are duplicate rows for each conduit. We want to reshape this data to have both xy and nodes in the same row.
 
-```{r}
-
-```
-
 
 ```{r}
 #arrange by conduit name and descending elevation
@@ -133,7 +129,6 @@ reshape <- arrange %>%
 con1 <- reshape %>%  select(
   name,
   con1, 
-  subc, 
   x, 
   y, 
   elevation, 
@@ -144,16 +139,11 @@ con1 <- reshape %>%  select(
   width,
   height,
   structure
-  ) %>%  
-  distinct(
-    name, 
-    .keep_all = TRUE
-    )
+  )
 
 
 con2 <- reshape %>%  select(
   con2,
-  subc, 
   x, 
   y, 
   elevation, 
@@ -162,7 +152,12 @@ con2 <- reshape %>%  select(
     con1 = con2
     )
 
-merge<- merge(con1, con2, by = "con1") 
+merge<- merge(con1, con2, by = "con1")  %>% 
+  distinct(
+    name,
+    node.x,
+    .keep_all = TRUE
+    )
 ```
 
 
@@ -396,7 +391,7 @@ write.csv(xsections,"xsections.csv", row.names = FALSE)
 ;;--------------	----------	----------	----------	
 ```{r}
 
-junctions <- unique %>% 
+junctions <- con1 %>% 
   filter(
     structure != "Inlet/Outlet"
     ) %>% 
