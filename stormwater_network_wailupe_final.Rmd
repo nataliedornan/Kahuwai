@@ -420,9 +420,9 @@ outfalls <- unique %>%
     name = node
     )
 outfalls$type <- "FREE"
-outfalls$stagedata <- 
+outfalls$stagedata <- NA
 outfalls$gated <- "NO"
-outfalls$routeto <- 
+outfalls$routeto <- NA
 
 #you will need to check these structures in SWMM. If these structures are at an end of a conduit, then they are outfalls, otherwise you can quickly turn them back into a junction in SWMM.
 
