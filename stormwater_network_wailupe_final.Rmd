@@ -385,13 +385,12 @@ write.csv(xsections,"xsections.csv", row.names = FALSE)
 ```{r}
 
 junctions <- unique %>% 
-  select(
-    node, 
-    elevation,
-    structure
-    ) %>% 
   filter(
     structure != "Inlet/Outlet"
+    ) %>% 
+  select(
+    node, 
+    elevation
     ) %>% 
   rename(
     name = node
@@ -405,24 +404,25 @@ junctions$aponded <- 0
 write.csv(junctions,"junctions.csv", row.names = FALSE)
 ```
 
-[OUFALLS]
+[OUTFALLS]					
+;;Name          	Elevation 	Type      	Stage Data      	Gated   	Route To     
+;;--------------	----------	----------	----------------	--------	----------------
 ```{r}
 outfalls <- unique %>% 
+   filter(
+    structure == "Inlet/Outlet"
+    ) %>% 
   select(
     node, 
-    elevation,
-    structure
-    ) %>% 
-  filter(
-    structure == "Inlet/Outlet"
+    elevation
     ) %>% 
   rename(
     name = node
     )
-outfalls$maxdepth <- 0
-outfalls$initdepth <- 0
-outfalls$surdepth <- 0
-outfalls$aponded <- 0
+outfalls$type <- "FREE"
+outfalls$stagedata <- 
+outfalls$gated <- "NO"
+outfalls$routeto <- 
 
 #you will need to check these structures in SWMM. If these structures are at an end of a conduit, then they are outfalls, otherwise you can quickly turn them back into a junction in SWMM.
 
@@ -435,7 +435,7 @@ write.csv(outfalls,"outfalls.csv", row.names = FALSE)
 
 SWMM takes x and y that are in decimal degrees  (lat and long).
 ```{r}
-coordinates <- arrange %>% 
+coordinates <- unique %>% 
   select(
     node, 
     x, 
@@ -445,8 +445,17 @@ coordinates <- arrange %>%
 write.csv(coordinates,"coordinates.csv", row.names = FALSE)
 ```
 
-[VERTICES]
+[VERTICES]		
+;;Link          	X-Coord           	Y-Coord           
+;;--------------	------------------	------------------
 ```{r}
+vertices <- insertdata %>% 
+  select(
+   link, 
+    x, 
+    y
+    )
 
+write.csv(vertices,"vertices.csv", row.names = FALSE)
 ```
 
