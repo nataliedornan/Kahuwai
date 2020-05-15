@@ -22,7 +22,8 @@ library(janitor)
 
 
 #Data with clean names
-data <- read_csv("stre_cond_struc_wailupe.csv") %>% clean_names()
+data <- read_csv("stormwater_network_wailupe.csv") %>% clean_names()
+verticesdata <- read_csv("stormwater_network_allpoints_wailupe.csv") %>% clean_names()
 
 ```
 
@@ -449,12 +450,27 @@ write.csv(coordinates,"coordinates.csv", row.names = FALSE)
 ;;Link          	X-Coord           	Y-Coord           
 ;;--------------	------------------	------------------
 ```{r}
-vertices <- insertdata %>% 
+vertices <- verticesdata %>%
   select(
-   link, 
-    x, 
-    y
-    )
+    objectid,
+    point_x,
+    point_y
+  ) %>% 
+  rename(
+   link = objectid
+    ) 
+  
+vertices$c <- "C"
+
+#conduits
+vertices$link <- apply(
+  vertices,1,function(x) paste((x[18]), sep ="",(x[1]))
+  ) 
+
+#remove space
+unique$name <- gsub(
+  '\\s+', '', unique$name
+  )
 
 write.csv(vertices,"vertices.csv", row.names = FALSE)
 ```
