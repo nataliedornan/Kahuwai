@@ -25,7 +25,7 @@ points <- read_csv("subcatchment_points_all.csv") %>%
          ) %>%  
   select(name, x, y)
 
-attributes <- read_csv("subcatchments_all.csv") %>% 
+attributes <- read_csv("subcatchment_attributes.csv") %>% 
   clean_names() %>% 
   rename(name = objectid_1)
 ```
@@ -56,8 +56,6 @@ subc <- merge %>%
 subc$rain_gage <- "R1" #placeholder until you can manually assign the correct rain gage to the correct subcatchment
 subc$outlet <- "O1" #placeholder until you can manually assign the correct outlet to each subcatchment
 subc$curblen <- 0
-subc$width <- 400 #placeholder. width is the longest flow path of precipitation in a subcatchment. These were manually measured in ArcGIS using a measurement tool and capped at 400
-
 
 #arrange
 subc_file <- subc %>% 
