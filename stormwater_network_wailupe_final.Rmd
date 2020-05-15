@@ -59,8 +59,6 @@ network <- data %>%
   mutate (shape = str_replace_all(shape, "Other", "RECT_OPEN")) %>% 
   distinct()
 
-#CHECK THESE VALUE WITH WAILUPE10 SWMM FILE
-
 #Add the rest of the columns we need. SWMM does not take "NA" the default blank value for R, so we populate columns with 0 for now.
 network$initflow <- 0
 network$maxflow <- 0
@@ -82,25 +80,28 @@ unique <- network %>%
     node = group_indices(
       network, x, y
       )
-    )
+    ) 
 #assign nodes the letter j for "junction" (SWMM terminology) and conduits the letter c for "conduit" (SWMM terminology)
 
 unique$c <- "C"
 unique$j <- "J"
 
 #conduits
-unique$name <- apply(
-  unique,1,function(x) paste((x[18]), sep ="",(x[1]))
-  ) 
+unique$name= paste(unique$c,unique$name)
 
 #remove space
 unique$name <- gsub(
   '\\s+', '', unique$name
   )
+#node
+unique$node= paste(unique$j,unique$node)
 
+#remove space
+unique$node <- gsub(
+  '\\s+', '', unique$node
+  )
 
 ```
-
 
 2. Arrange and reshape data 
 Note: each conduit has start and end coordinates and nodes, - so there are duplicate rows for each conduit. We want to reshape this data to have both xy and nodes in the same row.
@@ -182,7 +183,6 @@ lengths <- dist %>%
       (dist_ft)^2 + (elevation.x-elevation.y)^2)
           )%>% 
   rename (
-    name = con1,
     from_node = node.x,
     to_node = node.y,
     subc = subc.x
@@ -212,7 +212,6 @@ conduits <- lengths %>%
     roughness 
     ) 
 
-#CHECK THESE VALUES WITH WAILUPE10 SWMM FILE
 conduits$inoffset <- 0
 conduits$outoffset <- 0
 conduits$initflow <- 0
@@ -457,21 +456,28 @@ vertices <- verticesdata %>%
     point_y
   ) %>% 
   rename(
-   link = objectid
+   link = objectid,
+   x = point_x,
+   y = point_y
     ) 
-  
 vertices$c <- "C"
 
 #conduits
 vertices$link <- apply(
-  vertices,1,function(x) paste((x[18]), sep ="",(x[1]))
+  vertices,1,function(x) paste((x[4]), sep ="",(x[1]))
   ) 
 
 #remove space
-unique$name <- gsub(
-  '\\s+', '', unique$name
+vertices$link <- gsub(
+  '\\s+', '', vertices$link
+  ) 
+ 
+  vertices1 <- vertices %>% 
+  select(
+    link,
+    x,
+    y
   )
 
-write.csv(vertices,"vertices.csv", row.names = FALSE)
+write.csv(vertices1,"vertices.csv", row.names = FALSE)
 ```
-
