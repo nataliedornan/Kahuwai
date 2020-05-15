@@ -72,33 +72,60 @@ network$outoffset <- 0
 
 We will also re-calculate distance between xy points because different sources return  different values for some of the conduits and some conduits need to have this distance calculated anyway because it is blank. 
 
-Step 1 - Create unique names for nodes with the same x and y coordinates, then arrange conduit by descending elevation.
+Step 1 - Create unique names for nodes with the same x and y coordinates, and unique names for conduits
 
 ```{r}
 #Index xy coordinates with unique IDs if different, same IDs if repeated
-nodes <- network %>% 
+unique <- network %>% 
   mutate(
     node = group_indices(
       network, x, y
       )
     )
+#assign nodes the letter j for "junction" (SWMM terminology) and conduits the letter c for "conduit" (SWMM terminology)
 
+unique$c <- "C"
+unique$j <- "J"
+
+#conduits
+unique$name <- apply(
+  unique,1,function(x) paste((x[18]), sep ="",(x[1]))
+  ) 
+
+#remove space
+unique$name <- gsub(
+  '\\s+', '', unique$name
+  )
+
+
+```
+
+```{r}
+#junctions (nodes)
+unique$bode <- apply(
+  unique,17,function(x) paste((x[19]), sep ="",(x[17]))
+  ) 
+
+#remove space in the name
+unique$node <- gsub(
+  '\\s+', '', unique$node
+  )
+
+```
+
+2. Arrange and reshape data 
+Note: each conduit has start and end coordinates and nodes, - so there are duplicate rows for each conduit. We want to reshape this data to have both xy and nodes in the same row.
+```{r}
 #arrange by conduit name and descending elevation
-arrange <- nodes[
+arrange <- unique[
   with(
-  nodes, order(
+  unique, order(
     name, 
     -elevation, 
     na.last=FALSE)
   ),
   ]
 
-```
-
-
-2. Arrange and reshape data 
-Note: each conduit has start and end coordinates and nodes, - so there are duplicate rows for each conduit. We want to reshape this data to have both xy and nodes in the same row.
-```{r}
 reshape <- arrange %>% 
    mutate(
     con1 = row_number()
@@ -108,6 +135,7 @@ reshape <- arrange %>%
       )
 
 con1 <- reshape %>%  select(
+  name,
   con1, 
   subc, 
   x, 
