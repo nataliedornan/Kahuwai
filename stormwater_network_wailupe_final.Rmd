@@ -359,9 +359,8 @@ write.csv(xsections,"xsections.csv", row.names = FALSE)
 ;;--------------	----------	----------	----------	
 ```{r}
 
-junctions <- unique %>% 
-  filter(
-    structure != "Inlet/Outlet"
+junctions <- unique %>% filter(
+    structure != "Inlet/Outlet" | is.na(structure)
     ) %>% 
   select(
     node, 
@@ -372,7 +371,6 @@ junctions <- unique %>%
     ) %>% 
   distinct(
     name,
-    elevation,
     .keep_all = TRUE
   )
 junctions$maxdepth <- 0
@@ -401,7 +399,6 @@ outfalls <- unique %>%
     ) %>% 
   distinct(
     name,
-    elevation,
     .keep_all = TRUE
   )
 outfalls$type <- "FREE"
