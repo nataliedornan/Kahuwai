@@ -42,8 +42,8 @@ See example SWMM format below:
 
 subc_outlet <- read_csv("subc_outlet.csv") %>% rename(name = subc, outlet = node)
 
-merge_a <- merge(points, attributes, by = "name" )  
-merge <-merge (merge_a, subc_outlet, by="name")
+merge_a <- merge(points, attributes, by = "name") %>% distinct (name, .keep_all = TRUE) 
+merge <-merge (merge_a, subc_outlet, by="name", all = TRUE)
 
 subc <- merge %>%
   mutate(

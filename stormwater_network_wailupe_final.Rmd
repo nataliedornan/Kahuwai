@@ -389,11 +389,7 @@ route_to <- unique %>%
     node, 
     elevation,
     subc
-    )%>% 
-  distinct(
-    node,
-    .keep_all = TRUE
-  ) 
+    )
 
 route_to[
   with(
@@ -404,7 +400,7 @@ route_to[
   ),
   ]
 
-route_to2 <-route_to %>% group_by(subc) %>% mutate(rank = row_number(subc)) %>% filter(rank == 1)
+route_to <-unique %>% group_by(subc) %>% mutate(rank = row_number(subc)) %>% filter(rank == 1 | is.na(rank))
 
 write.csv(route_to2,"subc_outlet.csv", row.names = FALSE)
   
