@@ -382,6 +382,34 @@ junctions$aponded <- 0
 write.csv(junctions,"junctions.csv", row.names = FALSE)
 ```
 
+Here is a csv that will help determine what junction to route each subcatchment's outlet to.
+```{r}
+route_to <- unique %>% 
+  select(
+    node, 
+    elevation,
+    subc
+    )%>% 
+  distinct(
+    node,
+    .keep_all = TRUE
+  ) 
+
+route_to[
+  with(
+  route_to, order(
+    subc, 
+    -elevation, 
+    na.last=FALSE)
+  ),
+  ]
+
+route_to2 <-route_to %>% group_by(subc) %>% mutate(rank = row_number(subc)) %>% filter(rank == 1)
+
+write.csv(route_to2,"subc_outlet.csv", row.names = FALSE)
+  
+```
+
 [OUTFALLS]					
 ;;Name          	Elevation 	Type      	Stage Data      	Gated   	Route To     
 ;;--------------	----------	----------	----------------	--------	----------------

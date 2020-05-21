@@ -38,7 +38,12 @@ See example SWMM format below:
 ;;Name  Rain Gage  Outlet  Area  %Imperv 	Width  %Slope  CurbLen  SnowPack      
         
 ```{r}
-merge <- merge(points, attributes, by = "name" )
+#If you have run the stormwater_network_wailupe_final.rmd, this file will be available. If not, use the alternate code chunk below
+
+subc_outlet <- read_csv("subc_outlet.csv") %>% rename(name = subc, outlet = node)
+
+merge_a <- merge(points, attributes, by = "name" )  
+merge <-merge (merge_a, subc_outlet, by="name")
 
 subc <- merge %>%
   mutate(
@@ -50,11 +55,11 @@ subc <- merge %>%
   ) %>% 
   distinct()
 
-
 #add columns for "subcatchments" file. 
 
-subc$rain_gage <- "R1" #placeholder until you can manually assign the correct rain gage to the correct subcatchment
-subc$outlet <- "J1" #placeholder until you can manually assign the correct outlet to each subcatchment
+
+subc$rain_gage <- "R1" 
+#placeholder until you can manually assign the correct rain gage to the correct subcatchment
 subc$curblen <- 0
 
 #arrange
@@ -74,6 +79,42 @@ subc_file <- subc %>%
 write.csv(subc_file ,"subcatchments.csv", row.names = FALSE)
 ```
 
+Alternate code chunk
+```{r}
+merge <- merge(points, attributes, by = "name" )
+
+subc <- merge %>%
+  mutate(
+    area_acre = area_sqft*0.0000229568
+    ) %>% 
+  rename(
+    area = area_acre,
+    imperv = percent_imp
+  ) %>% 
+  distinct()
+
+#add columns for "subcatchments" file. 
+subc$rain_gage <- "R1" 
+subc$outlet <- "J1" 
+subc$curblen <- 0
+
+#arrange
+subc_file <- subc %>% 
+  select(
+    name, 
+    rain_gage, 
+    outlet, 
+    area, 
+    imperv, 
+    width, 
+    slope, 
+    curblen
+    ) %>% 
+  distinct(name, .keep_all = TRUE)
+
+write.csv(subc_file ,"subcatchments.csv", row.names = FALSE)
+
+```
 
 [SUBAREAS]								
 ;;Subcatchment  N-Imperv  N-Perv  S-Imperv  S-Perv  PctZero  RouteTo  PctRouted 	
