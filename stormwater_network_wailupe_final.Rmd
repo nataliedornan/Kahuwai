@@ -23,7 +23,7 @@ library(janitor)
 
 #Data with clean names
 data <- read_csv("stormwater_network_wailupe.csv") %>% clean_names()
-verticesdata <- read_csv("stormwater_network_allpoints_wailupe.csv") %>% clean_names()
+vertices_dt <- read_csv("stormwater_network_allpoints_wailupe.csv") %>% clean_names()
 
 ```
 
@@ -59,12 +59,6 @@ network <- data %>%
   mutate (shape = str_replace_all(shape, "Other", "RECT_OPEN")) %>% 
   distinct()
 
-#Add the rest of the columns we need. SWMM does not take "NA" the default blank value for R, so we populate columns with 0 for now.
-network$initflow <- 0
-network$maxflow <- 0
-network$length <- 0
-network$inoffset <- 0
-network$outoffset <- 0
 ```
 
 "Length" provided by USGS is distance between xy points. This "length"" is not the actual length of the conduit because it does not take into consideration height (xyz), so we will use the difference between lower distance between xy points calcualte the actual length further down in the code.  
@@ -81,6 +75,7 @@ unique <- network %>%
       network, x, y
       )
     ) 
+
 #assign nodes the letter j for "junction" (SWMM terminology) and conduits the letter c for "conduit" (SWMM terminology)
 
 unique$c <- "C"
@@ -106,24 +101,6 @@ unique$node <- gsub(
 2. Arrange and reshape data 
 Note: each conduit has start and end coordinates and nodes, - so there are duplicate rows for each conduit. We want to reshape this data to have both xy and nodes in the same row.
 
-
-# dcast will reshape or merge duplicate data (in this case "Name) and create a column for any unique data attached to "Name". It will use the variable "Node" and name unique values of nodes in numerical order.
-
-match_nodes <- dcast(setDT(arranged), Name~rowid(Name, prefix="Nodes"), value.var="Nodes")
-
-#make a table with both x and y coordinates in one row
-
-match_x <- dcast(setDT(conduits), Name~rowid(Name, prefix="POINT_X"), value.var="POINT_X")
-
-match_y <- dcast(setDT(conduits), Name~rowid(Name, prefix="POINT_Y"), value.var="POINT_Y")
-
-#The match function will only have the two variables. We will need to merge conduit and "match"" data tables together using the merge function.
-
-merge_XY <-merge(match_x, match_y, by = "Name")
-
-merge_XY_nodes <-merge(merge_XY, match_nodes, by = "Name")
-
-
 ```{r}
 #arrange by conduit name and descending elevation
 arrange <- unique[
@@ -135,62 +112,13 @@ arrange <- unique[
   ),
   ]
 
-
-reshape_datan <- dcast(setDT(arrange), name~rowid(name, prefix="node"), value.var="node")
-
-reshape_datax <- dcast(setDT(arrange), name~rowid(name, prefix="x"), value.var="x")
-
-reshape_datay <- dcast(setDT(arrange), name~rowid(name, prefix="y"), value.var="y")
-
-reshape_datae <- dcast(setDT(arrange), name~rowid(name, prefix="elevation"), value.var="elevation")
-
-merge_xy <- merge(reshape_datax, reshape_datay, by = "name")
-
-merge_n <- merge(merge_xy, reshape_datan, by = "name")
-
+#reshape data
+reshape_dt <- dcast(
+  setDT(arrange), 
+  name + roughness ~ rowid(name, prefix="node"), 
+  value.var=c("node", "x", "y", "elevation"))
 
 ```
-
-reshape <- arrange %>% 
-   mutate(
-    con1 = row_number()
-    ) %>% 
-  mutate(
-      con2 = row_number()-1
-      )
-
-con1 <- reshape %>%  select(
-  name,
-  con1, 
-  x, 
-  y, 
-  elevation, 
-  node, 
-  roughness,
-  shape,
-  diameter,
-  width,
-  height,
-  structure
-  )
-
-
-con2 <- reshape %>%  select(
-  con2,
-  x, 
-  y, 
-  elevation, 
-  node) %>% 
-  rename(
-    con1 = con2
-    )
-
-merge<- merge(con1, con2, by = "con1")  %>% 
-  distinct(
-    name,
-    node.x,
-    .keep_all = TRUE
-    )
 
 3. Length
 
@@ -201,12 +129,12 @@ c. Use pythag. theorem to calculate length
 
 ```{r}
 #part a -  distance (adjust code based on number of pairs. This dataset has 18 based on the longest conduit)
-dist <- merge_n %>%  
+dist <- reshape_dt %>%  
   rowwise(
   ) %>% 
   mutate (
-    dist_m = distm(c(x1, y1), 
-                   c(x2, y2), 
+    dist_m = distm(c(x_node1, y_node1), 
+                   c(x_node2, y_node2), 
                    fun = distHaversine
                    )
     ) %>% 
@@ -218,12 +146,11 @@ dist <- merge_n %>%
 lengths <- dist %>%  
   mutate (
     length = sqrt(
-      (dist_ft)^2 + (elevation.x-elevation.y)^2)
+      (dist_ft)^2 + (elevation_node1-elevation_node2)^2)
           )%>% 
   rename (
-    from_node = node.x,
-    to_node = node.y,
-    subc = subc.x
+    from_node = node_node1,
+    to_node = node_node2
   )
 
 ```
@@ -237,10 +164,7 @@ Use roughness value 0.01, for concrete pipes found in Appendix A-8 pg. 184 of EP
 ```{r}
 conduits <- lengths %>% 
   mutate(
-    roughness = ifelse(is.na(roughness), 
-                       0.01, 
-                       roughness
-                       )
+    roughness = ifelse(is.na(roughness), 0.01, roughness)
     ) %>% 
   select(
     name,
@@ -264,9 +188,26 @@ write.csv(conduits,"conduits.csv", row.names = FALSE)
 ;;Link  Shape	Geom1	Geom2	Geom3 Geom4 Barrels Culvert   
 ;;--------------	------------	----------------	----------
 
+```{r}
+xsection_dt <- merge(
+  lengths, 
+  unique, 
+  by = "name"
+  ) %>% 
+  select (
+    name, 
+    length, 
+    shape, 
+    diameter, 
+    width, 
+    height
+    )
+```
+
+
 a - concrete pipe dimensions
 ```{r}
-pipes<- lengths %>% 
+pipes<- xsection_dt %>% 
   filter(
     shape == "CIRCULAR"
     ) %>% 
@@ -283,7 +224,6 @@ pipes<- lengths %>%
   select(
     link, 
     shape,
-    subc,
     length,
     geom1
   )
@@ -296,7 +236,7 @@ pipes$culvert <- 0
 
 b - box culverts, ditches, and "other" conduit dimensions
 ```{r}
-ditch_box <- lengths %>% 
+ditch_box <- xsection_dt %>% 
   filter(
     shape == "RECT_CLOSED" | shape == "RECT_OPEN"
     ) %>% 
@@ -313,7 +253,6 @@ ditch_box <- lengths %>%
   select( 
     link, 
     shape, 
-    subc,
     length,
     geom1,
     geom2
@@ -328,7 +267,7 @@ ditch_box$culvert <- 0
 
 c - channel (channelized stream) dimenssions
 ```{r}
-channel <- lengths %>% 
+channel <- xsection_dt %>% 
   filter(
     is.na(shape)
     ) %>% 
@@ -349,7 +288,6 @@ channel <- lengths %>%
   select(
      link, 
     shape,
-    subc,
     length,
     geom1,
     geom2
@@ -377,7 +315,6 @@ xsections_df <- rbind(
     geom4, 
     barrels, 
     culvert, 
-    subc, 
     length
     ) %>%  
   distinct(
@@ -422,7 +359,7 @@ write.csv(xsections,"xsections.csv", row.names = FALSE)
 ;;--------------	----------	----------	----------	
 ```{r}
 
-junctions <- con1 %>% 
+junctions <- unique %>% 
   filter(
     structure != "Inlet/Outlet"
     ) %>% 
@@ -432,7 +369,12 @@ junctions <- con1 %>%
     ) %>% 
   rename(
     name = node
-    )
+    ) %>% 
+  distinct(
+    name,
+    elevation,
+    .keep_all = TRUE
+  )
 junctions$maxdepth <- 0
 junctions$initdepth <- 0
 junctions$surdepth <- 0
@@ -456,7 +398,12 @@ outfalls <- unique %>%
     ) %>% 
   rename(
     name = node
-    )
+    ) %>% 
+  distinct(
+    name,
+    elevation,
+    .keep_all = TRUE
+  )
 outfalls$type <- "FREE"
 outfalls$stagedata <- NA
 outfalls$gated <- "NO"
@@ -478,7 +425,13 @@ coordinates <- unique %>%
     node, 
     x, 
     y
-    )
+    ) %>% 
+  distinct(
+    node,
+    x,
+    y,
+    .keep_all = TRUE
+  )
 
 write.csv(coordinates,"coordinates.csv", row.names = FALSE)
 ```
@@ -487,7 +440,7 @@ write.csv(coordinates,"coordinates.csv", row.names = FALSE)
 ;;Link          	X-Coord           	Y-Coord           
 ;;--------------	------------------	------------------
 ```{r}
-vertices <- verticesdata %>%
+vertices <- vertices_dt %>%
   select(
     objectid,
     point_x,
@@ -497,7 +450,13 @@ vertices <- verticesdata %>%
    link = objectid,
    x = point_x,
    y = point_y
-    ) 
+    ) %>% 
+  distinct(
+    link,
+    x,
+    y,
+    .keep_all = TRUE
+  )
 vertices$c <- "C"
 
 #conduits
