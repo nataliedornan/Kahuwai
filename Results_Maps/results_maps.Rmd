@@ -178,38 +178,8 @@ tmap_save(top20_peak_map, "top20_peak_map.png")
 
 ```
 
-Satellite maps
-```{r}
 
-ph_basemap <- get_map(location= c(lon = -157.755877, lat = 21.292075), zoom=14, maptype = 'terrain')
-ggmap(ph_basemap) +
-    geom_sf(data = philly_crimes_sf, aes(fill=homic_rate_cat), inherit.aes = FALSE) +
-    scale_fill_brewer(palette = "OrRd") +
-  +
-    coord_sf(crs = st_crs(4326))
-
-maunalua_basemap <- get_googlemap(center = c(lon = -157.755877, lat = 21.292075),
-  zoom = 12, maptype = "satellite") 
-  
-  ggmap(maunalua_basemap)
-
-
-
-satellite_peak <- ggplot(data = common_peak) +
-  geom_sf(aes(fill = subcatchment),color = NA) + 
-  scale_fill_paletteer_c("viridis::viridis") +
-  theme_minimal()
-satellite_peak
-
-# Let's crop it: 
-world_base +
-  coord_sf(xlim = c(-20, 50), ylim = c(-40, 40), expand = FALSE)
-
-
-
-```
-
-Satellite maps google earth
+Data wrangling for google earth maps 
 ```{r}
 #Keep the common hotspots only
 common_peak_only <- subcatch_dry %>% 
