@@ -54,7 +54,7 @@ subc <- merge %>%
 #add columns for "subcatchments" file. 
 
 subc$rain_gage <- "R1" #placeholder until you can manually assign the correct rain gage to the correct subcatchment
-subc$outlet <- "O1" #placeholder until you can manually assign the correct outlet to each subcatchment
+subc$outlet <- "J1" #placeholder until you can manually assign the correct outlet to each subcatchment
 subc$curblen <- 0
 
 #arrange
