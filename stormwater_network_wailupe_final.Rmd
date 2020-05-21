@@ -159,6 +159,7 @@ lengths <- dist %>%
 [CONDUITS]								
 ;;Name  From Node To Node  Length Roughness InOffset  OutOffset InitFlow  MaxFlow
 ;;---------- ---------- ---------- ---------- ---------- ---------- ---------- ---------- ----------
+** The channelized stream needs to connect with the stormwater infrastructure via junctions/nodes in the urban region. It is feasible to connect them manually by drawing in the stream conduit in SWMM.
 
 Use roughness value 0.01, for concrete pipes found in Appendix A-8 pg. 184 of EPA manual
 ```{r}
