@@ -1,0 +1,178 @@
+---
+title: "subcatchments_wailupe_final"
+author: "Erica Johnson"
+date: "5/12/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+```
+
+```{r , include=FALSE}
+
+library(tidyverse)
+library(dplyr)
+library(data.table)
+library(janitor)
+
+points <- read_csv("subc_points.csv") %>% 
+  clean_names() %>% 
+  rename(name = subcatchment_name,
+         x = point_x,
+         y = point_y
+         ) %>%  
+  select(name, x, y)
+
+attributes <- read_csv("subc_attributes.csv") %>% 
+  clean_names() %>% 
+  rename(name = objectid_1)
+```
+
+Collect Name, Area, Width, X and Y coordinates of each polygon and arrange them into the SWMM format. Rain gage and Outlets were assigned manually in SWMM
+
+See example SWMM format below:
+
+[SUBCATCHMENTS]								
+;;Name  Rain Gage  Outlet  Area  %Imperv 	Width  %Slope  CurbLen  SnowPack      
+        
+```{r}
+#If you have run the stormwater_network_wailupe_final.rmd, this file will be available. If not, use the alternate code chunk below
+
+subc_outlet <- read_csv("subc_outlet.csv") %>% rename(name = subc, outlet = node)
+
+merge_a <- merge(points, attributes, by = "name") %>% distinct (name, .keep_all = TRUE) 
+merge <-merge (merge_a, subc_outlet, by="name", all = TRUE)
+
+subc <- merge %>%
+  mutate(
+    area_acre = area_sqft*0.0000229568
+    ) %>% 
+  rename(
+    area = area_acre,
+    imperv = percent_imp
+  ) %>% 
+  distinct()
+
+#add columns for "subcatchments" file. 
+
+
+subc$rain_gage <- "R1" 
+#placeholder until you can manually assign the correct rain gage to the correct subcatchment
+subc$curblen <- 0
+
+#arrange
+subc_file <- subc %>% 
+  select(
+    name, 
+    rain_gage, 
+    outlet, 
+    area, 
+    imperv, 
+    width, 
+    slope, 
+    curblen
+    ) %>% 
+  distinct(name, .keep_all = TRUE)
+
+write.csv(subc_file ,"inp_subcatchments.csv", row.names = FALSE)
+```
+
+Alternate code chunk
+```{r}
+merge <- merge(points, attributes, by = "name" )
+
+subc <- merge %>%
+  mutate(
+    area_acre = area_sqft*0.0000229568
+    ) %>% 
+  rename(
+    area = area_acre,
+    imperv = percent_imp
+  ) %>% 
+  distinct()
+
+#add columns for "subcatchments" file. 
+subc$rain_gage <- "R1" 
+subc$outlet <- "J1" 
+subc$curblen <- 0
+
+#arrange
+subc_file <- subc %>% 
+  select(
+    name, 
+    rain_gage, 
+    outlet, 
+    area, 
+    imperv, 
+    width, 
+    slope, 
+    curblen
+    ) %>% 
+  distinct(name, .keep_all = TRUE)
+
+write.csv(subc_file ,"inp_subcatchments.csv", row.names = FALSE)
+
+```
+
+[SUBAREAS]								
+;;Subcatchment  N-Imperv  N-Perv  S-Imperv  S-Perv  PctZero  RouteTo  PctRouted 	
+;;--------------	----------	----------	----------		
+1	0.01	0.1	0.05	0.05	25	OUTLET    		
+```{r}
+suba <- subc_file %>% 
+  select(name) %>% 
+  rename (subcatchment = name) %>% 
+  distinct()
+
+suba$n_imperv <- 0.01 #manning's n for impervious surfaces - values from SWMM Manual
+
+suba$n_perv <- 0.4 #manning's n for pervious (natural) surfaces. 0.4 for forested subcatchments. Later, identify urban subcatchments and input 0.15. - values from SWMM Manual  
+
+suba$s_imperv <- 0.2 #impervious surface depth of depression storage (in) - values in SWMM Manual
+
+suba$s_perv <- 0.3 #pervious (natural) surface depth of depression storage - values in SWMM manual
+
+suba$pctzero <- 0
+suba$RouteTo <- "OUTLET"
+
+#n is for Manning's n, and s is for Depth of Depression Storage.
+
+write.csv(suba ,"inp_subareas.csv", row.names = FALSE)
+```
+
+[INFILTRATION]					
+;;Subcatchment  	CurveNum  	          	DryTime   
+;;--------------	----------	----------	----------
+```{r}
+infil <- subc %>% 
+  select(name,
+         curve_number
+         ) %>% 
+  rename (
+    subcatchment = name
+    ) %>% 
+  distinct()
+
+infil$Blank <- 0.5 #this is conductivity, however this may have been depreciated in the model
+infil$DryTime <- 7 #units in days
+
+write.csv(infil ,"inp_infiltration.csv", row.names = FALSE)
+```
+
+[Polygons]		
+;;Subcatchment  	X-Coord           	Y-Coord           
+;;--------------	------------------	------------------
+```{r}
+polygons <- points %>% 
+  select(
+    name,
+    x,
+    y) %>% 
+  rename(subcatchment = name
+         ) %>% 
+  distinct()
+
+write.csv(polygons ,"inp_polygons.csv", row.names = FALSE)
+```
