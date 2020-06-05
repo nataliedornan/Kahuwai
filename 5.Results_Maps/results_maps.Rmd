@@ -20,7 +20,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 
 Load packages
-```{r}
+```{r, warning = FALSE, message = FALSE}
 library(tidyverse) #For data wrangling
 library(sf) #For shapefiles
 library(tmap) #For mapmaking
@@ -30,7 +30,7 @@ library(janitor) #For cleaning names
 ```
 
 Maps for dry storm hotspots
-```{r}
+```{r, message=FALSE, warning = FALSE}
 #Combine subcatchments outline with dry storm results
 subcatch_dry <- read_sf(dsn = here("5.Results_Maps","shapefiles"), layer = "subcatch_outline") %>%
   st_transform(crs = 4326) %>% #Set coordinate system
@@ -48,7 +48,7 @@ hotspots_dry_total <- tm_basemap("OpenStreetMap.Mapnik") +
   tm_text("subcatchment", size = 0.3) +
   tm_scale_bar(position = c(.6,.58), breaks = c(0, 0.2, 0.4, 0.6, 0.8,1)) +
   tm_compass(position = c(.58,.51))
-tmap_save(hotspots_dry_total, here("7.Results_Maps", "output_maps", "hotspots_dry_total.png"))
+tmap_save(hotspots_dry_total, here("5.Results_Maps", "output_maps", "hotspots_dry_total.png"))
 
 #  Map peak flow hotspots
 hotspots_dry_peak <- tm_basemap("OpenStreetMap.Mapnik") +
@@ -58,7 +58,7 @@ hotspots_dry_peak <- tm_basemap("OpenStreetMap.Mapnik") +
   tm_text("subcatchment", size = 0.3) +
   tm_scale_bar(position = c(.6,.61), breaks = c(0, 0.2, 0.4, 0.6, 0.8,1)) +
   tm_compass(position = c(.58,.54))
-tmap_save(hotspots_dry_peak, here("7.Results_Maps", "output_maps","hotspots_dry_peak.png"))
+tmap_save(hotspots_dry_peak, here("5.Results_Maps", "output_maps","hotspots_dry_peak.png"))
 
 ```
 
@@ -80,7 +80,7 @@ hotspots_wet_total <- tm_basemap("OpenStreetMap.Mapnik") +
   tm_text("subcatchment", size = 0.3) +
   tm_scale_bar(position = c(.6,.59), breaks = c(0, 0.2, 0.4, 0.6, 0.8,1)) +
   tm_compass(position = c(.58,.52))
-tmap_save(hotspots_wet_total, here("7.Results_Maps", "output_maps","hotspots_wet_total.png"))
+tmap_save(hotspots_wet_total, here("5.Results_Maps", "output_maps","hotspots_wet_total.png"))
 
 
 #  Peak flow hotspots
@@ -91,11 +91,11 @@ hotspots_wet_peak <- tm_basemap("OpenStreetMap.Mapnik") +
   tm_text("subcatchment", size = 0.3) +
   tm_scale_bar(position = c(.6,.54), breaks = c(0, 0.2, 0.4, 0.6, 0.8,1)) +
   tm_compass(position = c(.58,.47))
-tmap_save(hotspots_wet_peak, here("7.Results_Maps", "output_maps","hotspots_wet_peak.png"))
+tmap_save(hotspots_wet_peak, here("5.Results_Maps", "output_maps","hotspots_wet_peak.png"))
 ```
 
 Maps for top 20 hotspots commonly found between the dry storm and the wet storm
-```{r}
+```{r, warning = FALSE, message = FALSE}
 #Top 20 of total volume
 top20_dry_total <- subcatch_dry %>%  #Find top 20 hotspots for the dry storm
   arrange(-runoff_coeff) %>% 
@@ -143,7 +143,7 @@ top20_total_map <- tm_basemap("Hydda.Base") +
   tm_scale_bar(position = c(.56,.75), breaks = c(0, 0.2, 0.4, 0.6, 0.8,1)) +
   tm_compass(position = c(.54,.68))
 
-tmap_save(top20_total_map, here("7.Results_Maps", "output_maps","top20_total_map.png"))
+tmap_save(top20_total_map, here("5.Results_Maps", "output_maps","top20_total_map.png"))
 
 
 #Top 20 of peak volume
@@ -190,7 +190,7 @@ top20_peak_map <- tm_basemap("Hydda.Base") +
   tm_scale_bar(position = c(.56,.75), breaks = c(0, 0.2, 0.4, 0.6, 0.8,1)) +
   tm_compass(position = c(.54,.68))
 
-tmap_save(top20_peak_map, here("7.Results_Maps", "output_maps","top20_peak_map.png"))
+tmap_save(top20_peak_map, here("5.Results_Maps", "output_maps","top20_peak_map.png"))
 
 ```
 
@@ -221,7 +221,7 @@ common_peak_only <- subcatch_dry %>%
   subcatchment == "94" )
 
 #Export as .shp
-st_write(common_peak_only, here("7.Results_Maps", "output_shapefiles", "common_peak.shp"))
+st_write(common_peak_only, here("5.Results_Maps", "output_shapefiles", "common_peak.shp"))
 
 
 #Keep the common hotspots only
@@ -248,5 +248,5 @@ common_total_only <- subcatch_dry %>%
   subcatchment == "89")
 
 #Export as .shp
-st_write(common_total_only,  here("7.Results_Maps", "output_shapefiles","common_total.shp")
+st_write(common_total_only,  here("5.Results_Maps", "output_shapefiles","common_total.shp"))
 ```
