@@ -15,6 +15,6 @@ GitHub Repository: https://github.com/nataliedornan/Kahuwai
 
 Please direct any questions to:
 Natalie Dornan - nataliedornan@gmail.com
-Eleonore Durand - 
-Tara Jagadeesh - 
+Eleonore Durand - eleonoreacdurand@gmail.com
+Tara Jagadeesh - tarajagadeesh@gmail.com	
 Erica Johnson - 
