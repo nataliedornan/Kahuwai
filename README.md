@@ -2,7 +2,7 @@
 2020 UCSB Bren School of Environmental Science and Management GP Project: Kahuwai
 
 PURPOSE:
-Mālama Maunalua, a community non-profid based on the Island of O'ahu, Hawai'i, reached out to the Bren School to collaborate on a management project with the goal of identifying management areas or “hotspots” in watersheds surrounding Maunalua Bay in which land-based pollution could be reduced through the use of green infrastructure. This project contributes to their mission of Maunalua Bay’s restoration by modeling the hydrology of the region to predict stormwater runoff and identify hotspots where Mālama Maunalua can target their management efforts.
+Mālama Maunalua, a community non-profit organization based on the Island of O'ahu, Hawai'i, reached out to the Bren School to collaborate on a management project with the goal of identifying management areas or “hotspots” in watersheds surrounding Maunalua Bay in which land-based pollution could be reduced through the use of green infrastructure. This project contributes to their mission of Maunalua Bay’s restoration by modeling the hydrology of the region to predict stormwater runoff and identify hotspots where Mālama Maunalua can target their management efforts.
 
 We explore these hotspots with the EPA Stormwater Management Model, 5.1 (SWMM) (https://www.epa.gov/water-research/storm-water-management-model-swmm). 
 
