@@ -5,6 +5,8 @@ date: "February 13, 2020"
 output: html_document
 ---
 
+**NOTE: Graphs will not be shown in knitted document
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
@@ -15,7 +17,7 @@ library(tidyverse)
 ```
 
 
-```{r, fig.width=10, fig.height=5, results= 'asis', fig.show='hide'}
+```{r, fig.width=10, fig.height=5, results= 'asis', fig.show='hide', message = FALSE}
 
 #dryresults
 
@@ -129,7 +131,7 @@ regress_table_wet
 ```
 
 
-```{r, fig.show='hide'}
+```{r, fig.show='hide', message = FALSE, warning = FALSE}
 #graph observed vs simulated
 
 observed<- read_csv("c35_observed.csv")
@@ -261,7 +263,7 @@ min_range_runoff_table_wet
 
 ```
 
-```{r, fig.show='hide'}
+```{r, fig.show='hide', message = FALSE}
 observed09<- read_csv("c35_observed_09.csv")
 simulated09 <- read_csv("C35_simulated09.csv") 
 
@@ -309,7 +311,7 @@ ggsave("discharge09_final.pdf", width = 8, height =4)
 ggsave("dischage09_final.png", width = 8, height =4)
 ```
 
-```{r, fig.show='hide', warning = FALSE}
+```{r, fig.show='hide', warning = FALSE, message = FALSE}
 #picking top 15 subcatchments 
 
 dry_runoff_coef_top_10 <- top_n(results_dry, 15, runoff_coeff)
@@ -332,7 +334,7 @@ write.csv(wet_peak_top_10, file = "wet_peak_top_15.csv", row.names = FALSE)
 
 visualizing the sediment data from 09 
 
-```{r, fig.show='hide'}
+```{r, fig.show='hide', warning = FALSE, message = FALSE}
 
 sediment09<- read_csv("sediment_09_r.csv") %>% 
   mutate(discharge_obs_cfs = 
