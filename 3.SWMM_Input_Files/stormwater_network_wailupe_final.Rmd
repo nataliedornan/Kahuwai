@@ -401,7 +401,20 @@ route_to[
   ),
   ]
 
-route_to <-unique %>% group_by(subc) %>% mutate(rank = row_number(subc)) %>% filter(rank == 1 | is.na(rank))
+route_to2 <-unique %>% 
+  group_by(
+    subc
+    ) %>% 
+  mutate(
+    rank = row_number(subc)
+    ) %>% 
+  filter(
+    rank == 1 | is.na(rank)
+    ) %>% 
+  select(
+    subc,
+    node
+    )
 
 write.csv(route_to2,"subc_outlet.csv", row.names = FALSE)
   
