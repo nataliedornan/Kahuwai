@@ -1,5 +1,5 @@
 ---
-title: "stormwater_network_wailupe_final"
+title: "Wailupe Stormwater Network Final"
 author: "Erica Johnson"
 date: "5/7/2020"
 output: html_document
@@ -11,7 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 
 Read libraries and data file here
-```{r, include=FALSE}
+```{r, warning = FALSE, message = FALSE}
 #Libraries
 library(tidyverse)
 library(dplyr)
@@ -28,7 +28,7 @@ vertices_dt <- read_csv("sw_network_allpoints_wailupe.csv") %>% clean_names()
 ```
 
 Select columns with the data we need to use. Rename them for easy reference.
-```{r}
+```{r, message = FALSE}
 network <- data %>% 
   select(
   objectid,
@@ -384,7 +384,7 @@ write.csv(junctions,"inp_junctions.csv", row.names = FALSE)
 ```
 
 Here is a csv that will help determine what junction to route each subcatchment's outlet to.
-```{r}
+```{r, message = FALSE}
 route_to <- unique %>% 
   select(
     node, 

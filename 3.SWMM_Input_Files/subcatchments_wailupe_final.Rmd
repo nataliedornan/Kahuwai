@@ -1,5 +1,5 @@
 ---
-title: "subcatchments_wailupe_final"
+title: "Wailupe Subcatchments Final"
 author: "Erica Johnson"
 date: "5/12/2020"
 output: html_document
@@ -10,7 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```
 
-```{r , include=FALSE}
+```{r , warning =FALSE, message = FALSE}
 
 library(tidyverse)
 library(dplyr)

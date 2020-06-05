@@ -1,5 +1,5 @@
 ---
-title: "results_graphs"
+title: "Graphs of SWMM Results"
 author: "Eleonore Durand"
 date: "February 13, 2020"
 output: html_document
@@ -9,13 +9,13 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r}
+```{r, warning = FALSE, include = FALSE}
 library(tidyverse)
 
 ```
 
 
-```{r, fig.width=10, fig.height=5, results= 'asis'}
+```{r, fig.width=10, fig.height=5, results= 'asis', fig.show='hide'}
 
 #dryresults
 
@@ -73,7 +73,7 @@ regress_table_dry
 
 ```
 
-```{r, results= 'asis'}
+```{r, results= 'asis', fig.show='hide'}
 #wetsummary
 
 swm_results_wet<-read_csv("Wailupe10_wet_summary.csv")
@@ -129,7 +129,7 @@ regress_table_wet
 ```
 
 
-```{r}
+```{r, fig.show='hide'}
 #graph observed vs simulated
 
 observed<- read_csv("c35_observed.csv")
@@ -155,7 +155,7 @@ sutcliffe<- NSE(sim, obs, na.rm=TRUE, FUN=NULL, epsilon=c("Pushpalatha2012"))
 
 sutcliffe
 
-write.csv(discharge,"C:\\Users\\eleon\\Documents\\Bren\\Malama Maunalua\\discharge_obv_sim1.csv", row.names = FALSE)
+write.csv(discharge,file = "discharge_obv_sim1.csv", row.names = FALSE)
 
 graph<- ggplot(discharge, aes(x=discharge_obs_cfs, simulated_flow_cfs))+
   geom_point()
@@ -261,7 +261,7 @@ min_range_runoff_table_wet
 
 ```
 
-```{r}
+```{r, fig.show='hide'}
 observed09<- read_csv("c35_observed_09.csv")
 simulated09 <- read_csv("C35_simulated09.csv") 
 
@@ -283,7 +283,7 @@ sutcliffe09<- NSE(sim09, obs09, na.rm=TRUE, FUN=NULL, epsilon=c("Pushpalatha2012
 
 sutcliffe09
 
-write.csv(discharge09,"C:\\Users\\eleon\\Documents\\Bren\\Malama Maunalua\\discharge_obv_sim09.csv", row.names = FALSE)
+write.csv(discharge09, file = "discharge_obv_sim09.csv", row.names = FALSE)
 
 graph09<- ggplot(discharge09, aes(x=discharge_obs_cfs, simulated_flow_cfs))+
   geom_point()
@@ -309,7 +309,7 @@ ggsave("discharge09_final.pdf", width = 8, height =4)
 ggsave("dischage09_final.png", width = 8, height =4)
 ```
 
-```{r}
+```{r, fig.show='hide', warning = FALSE}
 #picking top 15 subcatchments 
 
 dry_runoff_coef_top_10 <- top_n(results_dry, 15, runoff_coeff)
@@ -320,19 +320,19 @@ wet_runoff_coef_top_10 <- top_n(results_wet, 15, runoff_coeff)
 
 wet_peak_top_10 <- top_n(results_wet, 15, peak_runoff_cfs)
 
-write.csv(dry_runoff_coef_top_10,"C:\\Users\\eleon\\Documents\\Bren\\Malama Maunalua\\dry_runoff_top_15.csv", row.names = FALSE)
+write.csv(dry_runoff_coef_top_10, file = "dry_runoff_top_15.csv", row.names = FALSE)
 
-write.csv(wet_runoff_coef_top_10,"C:\\Users\\eleon\\Documents\\Bren\\Malama Maunalua\\wet_runoff_top_15.csv", row.names = FALSE)
+write.csv(wet_runoff_coef_top_10, file = "wet_runoff_top_15.csv", row.names = FALSE)
 
-write.csv(dry_peak_top_10,"C:\\Users\\eleon\\Documents\\Bren\\Malama Maunalua\\dry_peak_top_15.csv", row.names = FALSE)
+write.csv(dry_peak_top_10,file = "dry_peak_top_15.csv", row.names = FALSE)
 
-write.csv(wet_peak_top_10,"C:\\Users\\eleon\\Documents\\Bren\\Malama Maunalua\\wet_peak_top_15.csv", row.names = FALSE)
+write.csv(wet_peak_top_10, file = "wet_peak_top_15.csv", row.names = FALSE)
 
 ```
 
 visualizing the sediment data from 09 
 
-```{r}
+```{r, fig.show='hide'}
 
 sediment09<- read_csv("sediment_09_r.csv") %>% 
   mutate(discharge_obs_cfs = 
