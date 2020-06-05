@@ -9,9 +9,11 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-This RMD file explores and tidies precipitation data downloaded from the NOAA National Center for Environmental Information website for rain gauges in Hawaii Kai, Wailupe, and Paiko in the Maunalua Bay Region. 
+This RMD file explores and tidies precipitation data downloaded from the NOAA National Center for Environmental Information website for rain gauges in Wailupe watershed, Maunalua Bay Region
 
-```{r}
+NOTE: Figures will be hidden from knitted markdown.
+
+```{r, Load Data, echo=FALSE, include = FALSE}
 ## Data Wrangling for Kahuwai Stormwater Data
 ## N Dornan
 
@@ -37,7 +39,7 @@ rain_dat_08$DATE <- ymd(rain_dat_08$DATE)
 
 Tidy up the data to make it a little easier to work with. This code creates a new dataframe from the orifical dataset. Here we are only looking at the Wailupe gauge. Columns were renamed and data was filtered to remove flags.
 
-```{r}
+```{r, Clean Up Dataset}
 wailupe_tidy_77 <- rain_dat_77 %>% 
   rename(station = STATION, station_name = STATION_NAME, elevation = ELEVATION, lat = LATITUDE, lon = LONGITUDE, date = DATE, time = TIME, qgag = QGAG, qgag_flag = Measurement.Flag, qgag_qual = Quality.Flag, qgag_units = Units, qpcp = QPCP, qpcp_flag = Measurement.Flag.1, qpcp_qual = Quality.Flag.1, qpcp_units = Units.1) %>% #renames columns
   filter(station_name == "WAILUPE VALLEY SCHOOL 723.6 HI US") %>% #filter to Wailupe gauge only
@@ -61,7 +63,7 @@ wailupe_tidy_77 <- rain_dat_77 %>%
 ```
 
 Look at Wailupe Dataset in a daily format to explore total rainfall over a 24 hour periode
-```{r}
+```{r, Daily Data}
 
 wailupe_daily_77 <- wailupe_tidy_77 %>%  
   group_by(date) %>%
@@ -72,7 +74,7 @@ wailupe_daily_77 <- wailupe_tidy_77 %>%
 ```
 
 Look at the timeseries of daily Wailupe Data
-```{r}
+```{r, Explore Timeseries, fig.show='hide'}
 ##TS TIME
 
 wailupe_daily_77$date <- ymd(wailupe_daily_77$date)
@@ -104,7 +106,7 @@ wailupe_ts_plot
 ```
 
 Now search for 2 year, 24 hour storm events
-```{r}
+```{r, 2 year 24 hour storm, fig.show='hide'}
 
 ##Search for 2 year, 24 hour storm events (4.78 inches plus/minus 4.12-5.57 inches 90% confidence interval)
 
@@ -128,7 +130,6 @@ scatterplot
 Awesome. The data is tidied and explored, now we need to pull out a good calibration sub-dataset to feed into our model. To do this, Natalie will filter by year, and see the percentage of data present per year (#days in data/365). Then, she will choose a representative dataset from the resulting subset.
 
 ```{r}
-## This could be more elegant. 
 
 ######################
 wailupe_05_investigate <- wailupe_tidy_77 %>%
@@ -212,7 +213,7 @@ wailupe_13_investigate <- wailupe_tidy_77 %>%
 
 The more recent data (Since 2008) has better reporting. Now, filter years with targeted storm events. DISCHARGE DATA IS FROM 10/25/08-2019, so in order to properly calibrate the SWMM model a storm needs to be within these dates. 
 
-```{r, Exploring Storms} 
+```{r, Exploring Storms, fig.show='hide'} 
 
 ## filter dataset from 2008-2014
 wailupe_daily_08_14 <- wailupe_daily_77 %>%
@@ -279,7 +280,7 @@ wailupe_plot_13
 ```
 
 
-```{r, Representative Storm}
+```{r, Representative Storm, fig.show='hide'}
 
 ##Plot selected storm events, export as .csv for SWMM input and .jpeg for visualization)
 
@@ -309,7 +310,7 @@ write.csv(wailupe_storm_10, file = "wailupe_storm_20101219_r.csv")
 ```
 
 Isolate another smaller storm event with associated discharge data for model validation
-```{r, Validation Storm}
+```{r, Validation Storm, warning = FALSE, fig.show='hide'}
 
 #2009 storm @ 2.8 inches
 wailupe_storm_09 <- wailupe_tidy_77 %>%
