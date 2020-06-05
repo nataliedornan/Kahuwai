@@ -17,4 +17,4 @@ Please direct any questions to:
 Natalie Dornan - nataliedornan@gmail.com
 Eleonore Durand - eleonoreacdurand@gmail.com
 Tara Jagadeesh - tarajagadeesh@gmail.com	
-Erica Johnson - 
+Erica Johnson - 3ricaj@gmail.com
