@@ -1,5 +1,5 @@
 ---
-title: "curve_numbers_final"
+title: "Soil Curve Numbers"
 author: "Eleonore Durand"
 date: "May 13, 2020"
 output: html_document
@@ -9,16 +9,15 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r}
+```{r, warning = FALSE, message = FALSE}
 #load necessary packages
 
 library(tidyverse)
 
-
 ```
 
 
-```{r}
+```{r, message = FALSE, fig.show='hide'}
 soil_union <- read_csv("soil_land_union_maunalua.csv") %>% 
   select(OBJECTID_1, hydgrpdcd, Class_Name, Shape_Length, Shape_Area) %>% 
   filter(hydgrpdcd != "NA")

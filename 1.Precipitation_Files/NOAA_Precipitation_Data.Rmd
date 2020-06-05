@@ -13,7 +13,7 @@ This RMD file explores and tidies precipitation data downloaded from the NOAA Na
 
 NOTE: Figures will be hidden from knitted markdown.
 
-```{r, Load Data, echo=FALSE, include = FALSE}
+```{r, Load Data, message = FALSE, warning = FALSE}
 ## Data Wrangling for Kahuwai Stormwater Data
 ## N Dornan
 
