@@ -39,6 +39,8 @@ results_dry<- merge(subcatch, swm_results_dry, by = "subcatchment") %>%
              )
            )
 
+write.csv(results_dry, file = "results_dry.csv") ##save for use with graph maps
+
 
 results_regression_dry<- lm(total_runoff_in ~Curve_Number + Slope + percent_imp + Area_sqft, data = results_dry)
 
@@ -91,6 +93,7 @@ results_wet<- merge(subcatch, swm_results_wet, by = "subcatchment") %>%
              )
            )
 
+write.csv(results_wet, file = "results_wet.csv") ##save for use with graph maps
 
 results_regression_wet<- lm(total_runoff_in ~Curve_Number + Slope + percent_imp + Area_sqft, data = results_wet)
 
