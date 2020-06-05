@@ -8,8 +8,10 @@ We explore these hotspots with the EPA Stormwater Management Model, 5.1 (SWMM) (
 
 These codes will take you through the data process involved with prepping data for use in SWMM, and visualizing the output data. The data are organized in files, which should be run in order. The first three folders involve code for input into SWMM, the last two files provide code for output data visualizations used in our final deliverables. 
 
+Mālama Maunalua: http://www.malamamaunalua.org/
+Bren School Project Information: http://bren.ucsb.edu/research/current_gp.htm
 Project Website: https://mauka2makai.weebly.com/
-GitHub Repository: https://github.com/nataliedornan/Kahuwai.
+GitHub Repository: https://github.com/nataliedornan/Kahuwai
 
 Please direct any questions to:
 Natalie Dornan - nataliedornan@gmail.com
