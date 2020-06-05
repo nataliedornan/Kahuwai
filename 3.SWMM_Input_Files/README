@@ -9,4 +9,5 @@ The sw_network_allpoints_wailupe.csv and sw_network_endpoints_wailupe.csv files 
 Our suggestion is to run  the stormwater_network_wailupe_final.Rmd file first. This will provide you with the subc_outlet.csv file that, in addition to the subc_attributes.csv and subc_points.csv, will be used for the  subcatchments_wailupe_final.Rmd.
 
 The code will provide several seperate files labelled starting with "inp". These are parts of the SWMM input file that will need to be put together.
+
 The "inp_wailupe_raw.xlsx" file is what the input file should look like after 1. making a project in SWMM andopening it's input file, 2. incorporating the seperate "inp" labelled files into a SWMM input file.
