@@ -5,7 +5,7 @@ date: "March 12, 2020"
 output:
   pdf_document: default
   html_document: default
-subtitle: This is code to explores and tidy precipitation data downloaded from the
+subtitle: This is code to explore and tidy precipitation data downloaded from the
   NOAA National Center for Environmental Information website for rain gauges in Wailupe
   watershed, Maunalua Bay Region
 ---
