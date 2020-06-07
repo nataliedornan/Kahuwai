@@ -20,8 +20,8 @@ library(tidyverse) #loading in the packages
 
 ## Weighted means for curve numbers
 ```{r, message = FALSE}
-
-ind_cn_all<- read_csv("subcatch_2_12_cn.csv") %>% #reading in the data for curve numbers from final curve numbers code
+#Load data for curve numbers from final curve numbers code
+ind_cn_all<- read_csv("subcatch_2_12_cn.csv") %>% 
   filter (curve_numbers_csv_CN != "NA") 
 
 all_cn_weighted<- ind_cn_all %>% 
