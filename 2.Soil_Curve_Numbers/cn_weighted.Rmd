@@ -1,17 +1,24 @@
 ---
-title: "Curve Number Adjustments"
-output: html_document
+title: "Soil Curve Number Adjustments"
+author: "Eleonore Durand"
+date: "May 13, 2020"
+output:
+  pdf_document: default
+  html_document: default
+subtitle: This is code to adjust the soil curve numbers for each subcatchment in Wailupe
+  using weighted means.
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+## Code Setup
 ```{r, warning = FALSE, message = FALSE}
 library(tidyverse) #loading in the packages
 ```
 
-
+## Weighted means for curve numbers
 ```{r, message = FALSE}
 
 ind_cn_all<- read_csv("subcatch_2_12_cn.csv") %>% #reading in the data for curve numbers from final curve numbers code
