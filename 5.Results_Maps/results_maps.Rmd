@@ -1,23 +1,22 @@
 ---
 title: "Results Maps"
-output: html_document
+subtitle: "This is code to create maps from the outpit files generated in Results_Graphs (Note: You must run Results_Graphs before this)"
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-**This is code to create maps from the output files generated in Results_Graphs
-*Run Results_Graphs before this!
 
-**Notes: 
--If you try to run the code all at once, the code may stop because of tmap_save() 
--tmap_save() is a function that allows you to export tmap outputs as images (such as .png)
--Something about this function stops the code, so you may need to run each code chunk manually 
--Even if the code returns an error, tmap_save() will still have generated an output file
--These functions are currently commented out
+Additional notes:  
+-tmap_save() and st_write() are functions to export tmap outputs as images (such as .png) and to export shapefiles, respectively.  
+-Something about these functions sometimes returns an error which stops the code from running, BUT they still create outputs
+-They have been annotated out of this code, so if you wish to export the outputs then simply remove the "##" from those lines of code
 
-Load packages
+## Code setup - Load packages
 ```{r, warning = FALSE, message = FALSE}
 library(tidyverse) #For data wrangling
 library(sf) #For shapefiles
@@ -27,35 +26,43 @@ library(here) #For loading shapefiles
 library(janitor) #For cleaning names
 ```
 
-Maps for dry storm hotspots
+## Maps for dry storm hotspots
 ```{r, message=FALSE, warning = FALSE, message = FALSE}
 
 results_dry<- read_csv("results_dry.csv") ##read in file from 4.Results_Maps
 
 #Combine subcatchments outline with dry storm results
-subcatch_dry <- read_sf(dsn = here("5.Results_Maps","shapefiles"), layer = "subcatch_outline") %>%
+subcatch_dry <- read_sf(dsn = here("5.Results_Maps","shapefiles"), 
+                        layer = "subcatch_outline") %>%
   st_transform(crs = 4326) %>% #Set coordinate system
   clean_names() %>% #Clean the names of columns
   select(subcatchment = objectid_1) %>% 
-  merge(results_dry) %>% #Merge the subcatchment outlines to the SWMM results for the dry storm (from Results_Graphs)
-  filter(subcatchment != "5") #Remove subcatchment 5 which is a mistake (overlaps another subcatchment)
+  merge(results_dry) %>% #Merge the subcatchment outlines to the SWMM results for 
+  #the dry storm (from Results_Graphs)
+  filter(subcatchment != "5") #Remove subcatchment 5 which is a mistake (overlaps another 
+  #subcatchment)
 
 
 #  Map total volume hotspots  
 hotspots_dry_total <- tm_basemap("OpenStreetMap.Mapnik") +
   tm_shape(subcatch_dry, unit = "Miles") +
-  tm_polygons("runoff_coeff", alpha = 0.8, palette = "Blues", style = "cont", n=8, title = "Runoff Coefficient") +
-  tm_layout(title = "December 2010 storm", inner.margins=c(.05, .05, 0.1, .53), legend.position =  c(.6,.63), legend.title.size = 1.4, legend.text.size = 1) +
+  tm_polygons("runoff_coeff", alpha = 0.8, palette = "Blues", style = "cont", n=8, 
+              title = "Runoff Coefficient") +
+  tm_layout(title = "December 2010 storm", inner.margins=c(.05, .05, 0.1, .53), 
+            legend.position =  c(.6,.63), legend.title.size = 1.4, legend.text.size = 1) +
   tm_text("subcatchment", size = 0.3) +
   tm_scale_bar(position = c(.6,.58), breaks = c(0, 0.2, 0.4, 0.6, 0.8,1)) +
   tm_compass(position = c(.58,.51))
-tmap_save(hotspots_dry_total, here("5.Results_Maps", "output_maps", "hotspots_dry_total.png"))
+tmap_save(hotspots_dry_total, here("5.Results_Maps", "output_maps", 
+                                   "hotspots_dry_total.png"))
 
 #  Map peak flow hotspots
 hotspots_dry_peak <- tm_basemap("OpenStreetMap.Mapnik") +
   tm_shape(subcatch_dry, unit = "Miles") +
-  tm_polygons("peak_runoff_cfs", alpha = 0.75, palette = "Greens", style = "cont", n=8, legend.hist = TRUE, title = "Peak Discharge (cfs)") +
-  tm_layout(title = "December 2010 storm", inner.margins=c(.05, .05, 0.1, .53), legend.position =  c(.6,.35), legend.title.size = 1.4, legend.text.size = 1) +
+  tm_polygons("peak_runoff_cfs", alpha = 0.75, palette = "Greens", style = "cont", n=8, 
+              legend.hist = TRUE, title = "Peak Discharge (cfs)") +
+  tm_layout(title = "December 2010 storm", inner.margins=c(.05, .05, 0.1, .53), 
+            legend.position =  c(.6,.35), legend.title.size = 1.4, legend.text.size = 1) +
   tm_text("subcatchment", size = 0.3) +
   tm_scale_bar(position = c(.6,.61), breaks = c(0, 0.2, 0.4, 0.6, 0.8,1)) +
   tm_compass(position = c(.58,.54))
@@ -63,7 +70,7 @@ hotspots_dry_peak <- tm_basemap("OpenStreetMap.Mapnik") +
 
 ```
 
-Maps for wet storm hotspots
+## Maps for wet storm hotspots
 ```{r warning = FALSE, message = FALSE}
 
 results_wet<- read_csv("results_wet.csv") ##read in file from 4.Results_Maps
@@ -79,8 +86,10 @@ subcatch_wet <- read_sf(dsn = here("5.Results_Maps","shapefiles"), layer = "subc
 #  Total volume hotspots  
 hotspots_wet_total <- tm_basemap("OpenStreetMap.Mapnik") +
   tm_shape(subcatch_wet, unit = "Miles") +
-  tm_polygons("runoff_coeff", alpha = 0.8, palette = "Blues", style = "cont", n=8, legend.hist = TRUE, title = "Runoff Coefficient") +
-  tm_layout(title = "March 2009 storm", inner.margins=c(.05, .05, 0.1, .53), legend.position =  c(.6,.32), legend.title.size = 1.4, legend.text.size = 1) +
+  tm_polygons("runoff_coeff", alpha = 0.8, palette = "Blues", style = "cont", n=8, 
+              legend.hist = TRUE, title = "Runoff Coefficient") +
+  tm_layout(title = "March 2009 storm", inner.margins=c(.05, .05, 0.1, .53), 
+            legend.position =  c(.6,.32), legend.title.size = 1.4, legend.text.size = 1) +
   tm_text("subcatchment", size = 0.3) +
   tm_scale_bar(position = c(.6,.59), breaks = c(0, 0.2, 0.4, 0.6, 0.8,1)) +
   tm_compass(position = c(.58,.52))
@@ -90,15 +99,17 @@ hotspots_wet_total <- tm_basemap("OpenStreetMap.Mapnik") +
 #  Peak flow hotspots
 hotspots_wet_peak <- tm_basemap("OpenStreetMap.Mapnik") +
   tm_shape(subcatch_wet, unit = "Miles") +
-  tm_polygons("peak_runoff_cfs", alpha = 0.75, palette = "Greens", style = "cont", n=8, legend.hist = TRUE, title = "Peak Discharge (cfs)") +
-  tm_layout(title = "March 2009 storm", inner.margins=c(.05, .05, 0.1, .53), legend.position =  c(.6,.27), legend.title.size = 1.4, legend.text.size = 1) +
+  tm_polygons("peak_runoff_cfs", alpha = 0.75, palette = "Greens", style = "cont", n=8, 
+              legend.hist = TRUE, title = "Peak Discharge (cfs)") +
+  tm_layout(title = "March 2009 storm", inner.margins=c(.05, .05, 0.1, .53), 
+            legend.position =  c(.6,.27), legend.title.size = 1.4, legend.text.size = 1) +
   tm_text("subcatchment", size = 0.3) +
   tm_scale_bar(position = c(.6,.54), breaks = c(0, 0.2, 0.4, 0.6, 0.8,1)) +
   tm_compass(position = c(.58,.47))
 ##tmap_save(hotspots_wet_peak, here("5.Results_Maps", "output_maps","hotspots_wet_peak.png"))
 ```
 
-Maps for top 20 hotspots commonly found between the dry storm and the wet storm
+## Maps for top 20 hotspots commonly found between the dry storm and the wet storm
 ```{r, warning = FALSE, message = FALSE}
 #Top 20 of total volume
 top20_dry_total <- subcatch_dry %>%  #Find top 20 hotspots for the dry storm
@@ -110,7 +121,8 @@ top20_wet_total <- subcatch_wet %>% #Find top 20 hotspots for the wet storm
   head(20)
 
 #Find the top 20 hotspots that occur in both storms
-common_total_vector <- as.data.frame(intersect(top20_dry_total$subcatchment, top20_wet_total$subcatchment)) 
+common_total_vector <- as.data.frame(intersect(top20_dry_total$subcatchment, 
+                                               top20_wet_total$subcatchment)) 
 colnames(common_total_vector) <- c("subcatchment")
 
 #Select the top 20 hotspots 
@@ -141,8 +153,10 @@ common_total$hotspot <- as.factor(common_total$hotspot)
 #Create a map of the top 20 hotspots
 top20_total_map <- tm_basemap("Hydda.Base") +
   tm_shape(common_total, unit = "Miles") +
-  tm_polygons("hotspot", title = "Legend", textNA = "Subcatchment", palette="#045a8d", alpha = 0.8)+
-  tm_layout(inner.margins=c(.05, .05, .05, .52), legend.position =  c(.56,.8),legend.title.size = 1.4, legend.text.size = 1) +
+  tm_polygons("hotspot", title = "Legend", textNA = "Subcatchment", palette="#045a8d", 
+              alpha = 0.8)+
+  tm_layout(inner.margins=c(.05, .05, .05, .52), legend.position =  c(.56,.8),
+            legend.title.size = 1.4, legend.text.size = 1) +
   tm_text("subcatchment", size = 0.3) +
   tm_scale_bar(position = c(.56,.75), breaks = c(0, 0.2, 0.4, 0.6, 0.8,1)) +
   tm_compass(position = c(.54,.68))
@@ -159,7 +173,8 @@ top20_wet_peak <- subcatch_wet %>%
   arrange(-peak_runoff_cfs) %>% 
   head(20)
 
-common_peak_vector <- as.data.frame(intersect(top20_dry_peak$subcatchment, top20_wet_peak$subcatchment)) 
+common_peak_vector <- as.data.frame(intersect(top20_dry_peak$subcatchment, 
+                                              top20_wet_peak$subcatchment)) 
 colnames(common_peak_vector) <- c("subcatchment")
 
 common_peak <- subcatch_dry %>% 
@@ -188,8 +203,10 @@ common_peak$hotspot <- as.factor(common_peak$hotspot)
 
 top20_peak_map <- tm_basemap("Hydda.Base") +
   tm_shape(common_peak, unit = "Miles") +
-  tm_polygons("hotspot", title = "Legend", textNA = "Subcatchment", palette="#006d2c", alpha = 0.8)+
-  tm_layout(inner.margins=c(.05, .05, .05, .52), legend.position =  c(.56,.8),legend.title.size = 1.4, legend.text.size = 1) +
+  tm_polygons("hotspot", title = "Legend", textNA = "Subcatchment", palette="#006d2c", 
+              alpha = 0.8)+
+  tm_layout(inner.margins=c(.05, .05, .05, .52), legend.position =  c(.56,.8),
+            legend.title.size = 1.4, legend.text.size = 1) +
   tm_text("subcatchment", size = 0.3) +
   tm_scale_bar(position = c(.56,.75), breaks = c(0, 0.2, 0.4, 0.6, 0.8,1)) +
   tm_compass(position = c(.54,.68))
@@ -199,7 +216,7 @@ tmap_save(top20_peak_map, here("5.Results_Maps", "output_maps","top20_peak_map.p
 ```
 
 
-Export the results as shapefiles (e.g. For use in other map software like ArcGIS or Google Earth Pro)
+## Export the results as shapefiles (e.g. For use in other map software like ArcGIS or Google Earth Pro)
 ```{r}
 #Keep the common hotspots only
 common_peak_only <- subcatch_dry %>% 
@@ -226,7 +243,6 @@ common_peak_only <- subcatch_dry %>%
 
 #Export as .shp
 ##st_write(common_peak_only, here("5.Results_Maps", "output_shapefiles", "common_peak.shp"))
-
 
 #Keep the common hotspots only
 common_total_only <- subcatch_dry %>% 
