@@ -1,6 +1,8 @@
 ---
-title: "Results Maps"
-subtitle: "This is code to create maps from the outpit files generated in Results_Graphs (Note: You must run Results_Graphs before this)"
+title: "Maps of SWMM Results"
+author: "Tara Jagadeesh"
+date: "February 13, 2020"
+subtitle: "This is code to create maps from the output files generated in Results_Graphs (Note: You must run Results_Graphs before this)"
 output:
   pdf_document: default
   html_document: default
@@ -11,10 +13,12 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 
-Additional notes:  
+NOTE: 
 -tmap_save() and st_write() are functions to export tmap outputs as images (such as .png) and to export shapefiles, respectively.  
 -Something about these functions sometimes returns an error which stops the code from running, BUT they still create outputs
--They have been annotated out of this code, so if you wish to export the outputs then simply remove the "##" from those lines of code
+-They have been annotated out of this code, so if you wish to export the outputs then simply remove the "##" from those lines of code  
+
+-Maps will be hidden from knitted markdown.
 
 ## Code setup - Load packages
 ```{r, warning = FALSE, message = FALSE}

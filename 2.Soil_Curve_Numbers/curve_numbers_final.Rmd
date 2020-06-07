@@ -5,12 +5,14 @@ date: "May 13, 2020"
 output:
   pdf_document: default
   html_document: default
+subtitle: This is code to generate soil curve numbers for each subcatchment in Wailupe.
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+## Code Setup
 ```{r, warning = FALSE, message = FALSE}
 #load necessary packages
 
@@ -18,8 +20,8 @@ library(tidyverse)
 
 ```
 
-
-```{r, message = FALSE, fig.show='hide'}
+## Load soil hydrologic groups data
+```{r, message = FALSE, fig.show='hide', warning = FALSE, results= 'hide'}
 soil_union <- read_csv("soil_land_union_maunalua.csv") %>% 
   select(OBJECTID_1, hydgrpdcd, Class_Name, Shape_Length, Shape_Area) %>% 
   filter(hydgrpdcd != "NA")
@@ -29,31 +31,31 @@ unique(soil_union$Class_Name) # get all the class names
 
 ```
 
-See methodology for further explanation as to how we found the curve number for each land class, but here is the table for ease of coding: 
+See methodology for further explanation as to how we found the curve number for each land class, but here is the table for ease of coding:  
 
-Land Cover	               Hydrologic group A	Hydrologic group B	Hydrologic group C	Hydrologic group D
-Grassland: poor condition	          68	              79	              86	                89
-Unconsolidated shore	              0	                0	                0	                   0
-Bare Land/Bare soil	                77                86	              91                	94
-Open Space Developed- good	        39              	61              	74                	80
-Evergreen forest- fair	            36	              60              	73                	79
-Scrub Shrub	                        36	              42	              55	                62
-Open Water	                        0               	0               	0	                   0
-Impervious surface- like shrubland	36	              42	              55	                62
-Palustrine Scrub Shrub wetland
-(woody wetland )	                  86	              86	              86	                86
-Palustrine Forested wetland 
-(woody wetland )	                  86	              86	              86	                86
-Palustrine Aquatic Bed	            NA	              NA	              NA	                NA
-Estuarine Emergent wetland	        80	              80	              80	                80
-Palustrine emergent wetland	        80	              80	              80	                80
-Pasture/Hay	                        40	              61	              73	                79
-Unclassified - here: open water	    0	                0	                0	                  0
-Cultivated Land	                    62	              74	              82	                86
+Land Cover	               Hydrologic group A	Hydrologic group B	Hydrologic group C	Hydrologic group D  
+Grassland: poor condition	          68	              79	              86	                89  
+Unconsolidated shore	              0	                0	                0	                   0  
+Bare Land/Bare soil	                77                86	              91                	94  
+Open Space Developed- good	        39              	61              	74                	80  
+Evergreen forest- fair	            36	              60              	73                	79  
+Scrub Shrub	                        36	              42	              55	                62  
+Open Water	                        0               	0               	0	                   0  
+Impervious surface- like shrubland	36	              42	              55	                62  
+Palustrine Scrub Shrub wetland  
+(woody wetland )	                  86	              86	              86	                86  
+Palustrine Forested wetland   
+(woody wetland )	                  86	              86	              86	                86  
+Palustrine Aquatic Bed	            NA	              NA	              NA	                NA  
+Estuarine Emergent wetland	        80	              80	              80	                80  
+Palustrine emergent wetland	        80	              80	              80	                80  
+Pasture/Hay	                        40	              61	              73	                79  
+Unclassified - here: open water	    0	                0	                0	                  0  
+Cultivated Land	                    62	              74	              82	                86  
 
 
-```{r}
-#lets add the curve numbers 
+## Assign curve numbers to each group
+```{r, message = FALSE}
 
 curve_numbers_maunalua <- soil_union %>% 
   mutate(CN= 

@@ -1,8 +1,11 @@
 ---
-title: "Wailupe Subcatchments Final"
+title: "Wailupe Subcatchments"
 author: "Erica Johnson"
-date: "5/12/2020"
-output: html_document
+date: "May 12, 2020"
+output:
+  pdf_document: default
+  html_document: default
+subtitle: This is code to process the subcatchments layer for use in SWMM.
 ---
 
 ```{r setup, include=FALSE}
@@ -10,8 +13,9 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```
 
+## Code Setup
 ```{r , warning =FALSE, message = FALSE}
-
+#Load packages
 library(tidyverse)
 library(dplyr)
 library(data.table)
@@ -30,6 +34,7 @@ attributes <- read_csv("subc_attributes.csv") %>%
   rename(name = objectid_1)
 ```
 
+## Process subcatchments for SWMM 
 Collect Name, Area, Width, X and Y coordinates of each polygon and arrange them into the SWMM format. Rain gage and Outlets were assigned manually in SWMM
 
 See example SWMM format below:
@@ -37,8 +42,9 @@ See example SWMM format below:
 [SUBCATCHMENTS]								
 ;;Name  Rain Gage  Outlet  Area  %Imperv 	Width  %Slope  CurbLen  SnowPack      
         
-```{r}
-#If you have run the stormwater_network_wailupe_final.rmd, this file will be available. If not, use the alternate code chunk below
+```{r, message = FALSE}
+#If you have run the stormwater_network_wailupe_final.rmd, this file will be available. 
+#If not, use the alternate code chunk below
 
 subc_outlet <- read_csv("subc_outlet.csv") %>% rename(name = subc, outlet = node)
 
@@ -128,7 +134,8 @@ suba <- subc_file %>%
 
 suba$n_imperv <- 0.01 #manning's n for impervious surfaces - values from SWMM Manual
 
-suba$n_perv <- 0.4 #manning's n for pervious (natural) surfaces. 0.4 for forested subcatchments. Later, identify urban subcatchments and input 0.15. - values from SWMM Manual  
+suba$n_perv <- 0.4 #manning's n for pervious (natural) surfaces. 0.4 for forested subcatchments. 
+#Later, identify urban subcatchments and input 0.15. - values from SWMM Manual  
 
 suba$s_imperv <- 0.2 #impervious surface depth of depression storage (in) - values in SWMM Manual
 

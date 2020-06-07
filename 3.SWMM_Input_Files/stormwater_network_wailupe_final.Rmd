@@ -1,15 +1,18 @@
 ---
-title: "Wailupe Stormwater Network Final"
+title: "Wailupe Stormwater Network"
 author: "Erica Johnson"
-date: "5/7/2020"
-output: html_document
+date: "May 7, 2020"
+output:
+  pdf_document: default
+  html_document: default
+subtitle: This is code to process the stormwater network for use in SWMM.
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-
+## Code Setup
 Read libraries and data file here
 ```{r, warning = FALSE, message = FALSE}
 #Libraries
@@ -26,6 +29,8 @@ data <- read_csv("sw_network_endpoints_wailupe.csv") %>% clean_names()
 vertices_dt <- read_csv("sw_network_allpoints_wailupe.csv") %>% clean_names()
 
 ```
+
+## Data Tidying
 
 Select columns with the data we need to use. Rename them for easy reference.
 ```{r, message = FALSE}
@@ -65,7 +70,7 @@ network <- data %>%
 
 We will also re-calculate distance between xy points because different sources return  different values for some of the conduits and some conduits need to have this distance calculated anyway because it is blank. 
 
-Step 1 - Create unique names for nodes with the same x and y coordinates, and unique names for conduits
+## Step 1 - Create unique names for nodes with the same x and y coordinates, and unique names for conduits
 
 ```{r}
 #Index xy coordinates with unique IDs if different, same IDs if repeated
@@ -76,7 +81,8 @@ unique <- network %>%
       )
     ) 
 
-#assign nodes the letter j for "junction" (SWMM terminology) and conduits the letter c for "conduit" (SWMM terminology)
+#Assign nodes the letter j for "junction" (SWMM terminology) and conduits the letter c for 
+#"conduit" (SWMM terminology)
 
 unique$c <- "C"
 unique$j <- "J"
@@ -98,7 +104,7 @@ unique$node <- gsub(
 
 ```
 
-2. Arrange and reshape data 
+## 2. Arrange and reshape data 
 Note: each conduit has start and end coordinates and nodes, - so there are duplicate rows for each conduit. We want to reshape this data to have both xy and nodes in the same row.
 
 ```{r}
@@ -120,7 +126,7 @@ reshape_dt <- dcast(
 
 ```
 
-3. Length
+## 3. Length
 
 We must now calculate the length of the conduits using the following steps:
 a. Find distance "length" between xy coordinates of each conduit using geosphere.
@@ -128,7 +134,9 @@ b. Use difference in elevation to calculate height
 c. Use pythag. theorem to calculate length
 
 ```{r}
-#part a -  distance (adjust code based on number of pairs. This dataset has 18 based on the longest conduit)
+#part a -  distance (adjust code based on number of pairs. 
+#This dataset has 18 based on the longest conduit)
+
 dist <- reshape_dt %>%  
   rowwise(
   ) %>% 
@@ -155,13 +163,13 @@ lengths <- dist %>%
 
 ```
 
-4. file output for conduits
+## 4. file output for conduits
 [CONDUITS]								
-;;Name  From Node To Node  Length Roughness InOffset  OutOffset InitFlow  MaxFlow
-;;---------- ---------- ---------- ---------- ---------- ---------- ---------- ---------- ----------
-** The channelized stream needs to connect with the stormwater infrastructure via junctions/nodes in the urban region. It is feasible to connect them manually by drawing in the stream conduit in SWMM.
+;;Name  From Node To Node  Length Roughness InOffset  OutOffset InitFlow  MaxFlow  
+;;---------- ---------- ---------- ---------- ---------- ---------- ---------- ---------- ----------  
+** The channelized stream needs to connect with the stormwater infrastructure via junctions/nodes in the urban region.   It is feasible to connect them manually by drawing in the stream conduit in SWMM.  
 
-Use roughness value 0.01, for concrete pipes found in Appendix A-8 pg. 184 of EPA manual
+Use roughness value 0.01, for concrete pipes found in Appendix A-8 pg. 184 of EPA manual  
 ```{r}
 conduits <- lengths %>% 
   mutate(
@@ -184,10 +192,10 @@ conduits$maxflow <- 0
 write.csv(conduits,"inp_conduits.csv", row.names = FALSE)
 ```
 
-5. file output for lengths
+## 5. file output for lengths
 [XSECTIONS]							
 ;;Link  Shape	Geom1	Geom2	Geom3 Geom4 Barrels Culvert   
-;;--------------	------------	----------------	----------
+;;--------------	------------	----------------	----------  
 
 ```{r}
 xsection_dt <- merge(
@@ -293,14 +301,15 @@ channel <- xsection_dt %>%
     geom1,
     geom2
     )
-#Geom3 and Geom4 are side lopes, which literature indicate vary from 1/1 to 1/2.  Ive seen side slopes perpendicular to the ground, especially where homes are built.
+#Geom3 and Geom4 are side lopes, which literature indicate vary from 1/1 to 1/2.  
+#Ive seen side slopes perpendicular to the ground, especially where homes are built.
 channel$geom3 <- 1
 channel$geom4 <- 1
 channel$barrels <- 
 channel$culvert <- 0
 ```
-e- bind all tables
 
+e- bind all tables
 ```{r}
 xsections_df <- rbind(
   pipes, 
@@ -353,7 +362,7 @@ write.csv(xsections,"inp_xsections.csv", row.names = FALSE)
 ```
 
 
-8. Junctions and coordinates/vertices
+## 8. Junctions and coordinates/vertices
 
 [JUNCTIONS]					
 ;;Name  Elevation MaxDepth  InitDepth SurDepth  Aponded   
@@ -384,7 +393,7 @@ write.csv(junctions,"inp_junctions.csv", row.names = FALSE)
 ```
 
 Here is a csv that will help determine what junction to route each subcatchment's outlet to.
-```{r, message = FALSE}
+```{r, message = FALSE, results = 'hide'}
 route_to <- unique %>% 
   select(
     node, 
@@ -422,7 +431,7 @@ write.csv(route_to2,"subc_outlet.csv", row.names = FALSE)
 
 [OUTFALLS]					
 ;;Name          	Elevation 	Type      	Stage Data      	Gated   	Route To     
-;;--------------	----------	----------	----------------	--------	----------------
+;;--------------	----------	----------	----------------	--------	----------------  
 ```{r}
 outfalls <- unique %>% 
    filter(
@@ -444,7 +453,9 @@ outfalls$stagedata <- NA
 outfalls$gated <- "NO"
 outfalls$routeto <- NA
 
-#you will need to check these structures in SWMM. If these structures are at an end of a conduit, then they are outfalls, otherwise you can quickly turn them back into a junction in SWMM.
+#you will need to check these structures in SWMM. 
+#If these structures are at an end of a conduit, then they are outfalls, 
+#otherwise you can quickly turn them back into a junction in SWMM.
 
 write.csv(outfalls,"inp_outfalls.csv", row.names = FALSE)
 ```

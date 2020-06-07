@@ -2,32 +2,36 @@
 title: "Graphs of SWMM Results"
 author: "Eleonore Durand"
 date: "February 13, 2020"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
+subtitle: "This is code to analyze the results from SWMM and create figures"
 ---
 
-**NOTE: Graphs will not be shown in knitted document
+NOTE: Figures will be be hidden from knitted markdown.
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r, warning = FALSE, include = FALSE}
-library(tidyverse)
+## Code setup - Load packages
+```{r, warning = FALSE, message = FALSE}
+library(tidyverse) #For data wrangling
+library(stargazer) #For creating nice tables
+library(kableExtra) #For creating nice tables
+library(hydroGOF)
 
 ```
 
-
-```{r, fig.width=10, fig.height=5, results= 'asis', fig.show='hide', message = FALSE}
-
-#dryresults
-
+## Analysis of dry storm results
+```{r, fig.width=10, fig.height=5, results= 'hide', fig.show='hide', message = FALSE, warning=FALSE}
 subcatch<- read_csv("subcatchments_all.csv") %>% 
   mutate(subcatchment= OBJECTID_1) %>% 
   select(subcatchment, Curve_Number, Slope, percent_imp, Area_sqft)
-  
 
-swm_results_dry<-read_csv("wailupe10_dry_summary.csv")
+swm_results_dry<-read_csv("wailupe10_dry_summary.csv") 
 
+#Characterize results by urbanization level
 results_dry<- merge(subcatch, swm_results_dry, by = "subcatchment") %>% 
   mutate(runoff_normalized= 
            total_runoff_in/Area_sqft) %>% 
@@ -39,49 +43,46 @@ results_dry<- merge(subcatch, swm_results_dry, by = "subcatchment") %>%
              )
            )
 
-write.csv(results_dry, file = "results_dry.csv") ##save for use with graph maps
+write.csv(results_dry, file = "results_dry.csv") ##Export as .csv for use with graph maps
 
+#Perform a linear regression for the SWMM dry storm results
+results_regression_dry<- lm(total_runoff_in ~Curve_Number + Slope + percent_imp + 
+                              Area_sqft, data = results_dry)
 
-results_regression_dry<- lm(total_runoff_in ~Curve_Number + Slope + percent_imp + Area_sqft, data = results_dry)
-
-
-
-
+#Graph the relationship bw simulated runoff and impervious cover by urbanization level
 runoff_imp_graph_dry<- results_dry %>% 
   ggplot(aes(x=percent_imp, y=total_runoff_in))+
   geom_point(aes(color=Urbanization_level))+
   labs(x= "Percent Impervious of Subcatchment", y= "Total Simulated Runoff (inches)")+
   scale_y_continuous(limits= c(0,7), breaks= seq(0,7, by= 1),expand= c(0,0.08))+
   scale_x_continuous(limits= c(0,80), breaks= seq(0,80, by= 10),expand= c(0,0))+
-  scale_color_manual(name= "Urbanization Level", values= c("darkgreen", "darkseagreen", "darkgoldenrod1"))+
+  scale_color_manual(name= "Urbanization Level", values= c("darkgreen", "darkseagreen", 
+                                                           "darkgoldenrod1"))+
   theme_classic()
-
-
 runoff_imp_graph_dry
 
-
-## save runoff vs. impervious graph
+#Save runoff vs. impervious graph
 ggsave("runoff_imp_dry.pdf", width = 8, height =4)
 ggsave("runoff_imp_dry.png", width = 8, height =4)
 
-library(stargazer)
-
+#Create a table for the regression results
 regress_table_dry<- stargazer(results_regression_dry, type ="html", digits= 2, 
                           dep.var.labels = "Total Runoff (Inches)", 
-                       covariate.labels = c("Curve Number", "Slope", "Percent Impervious", "Area (sqft)", "Y-Intercept"), 
+                       covariate.labels = c("Curve Number", "Slope", "Percent Impervious", 
+                                            "Area (sqft)", "Y-Intercept"), 
                        omit.stat = c("rsq"))
-
 regress_table_dry
 
 
 
 ```
 
-```{r, results= 'asis', fig.show='hide'}
-#wetsummary
+## Analysis of wet storm results
+```{r, results= 'hide', fig.show='hide', warning = FALSE, message = FALSE}
 
 swm_results_wet<-read_csv("Wailupe10_wet_summary.csv")
 
+#Characterize results by urbanization level
 results_wet<- merge(subcatch, swm_results_wet, by = "subcatchment") %>% 
   mutate(runoff_normalized= 
            total_runoff_in/Area_sqft) %>% 
@@ -95,47 +96,54 @@ results_wet<- merge(subcatch, swm_results_wet, by = "subcatchment") %>%
 
 write.csv(results_wet, file = "results_wet.csv") ##save for use with graph maps
 
-results_regression_wet<- lm(total_runoff_in ~Curve_Number + Slope + percent_imp + Area_sqft, data = results_wet)
+#Perform a linear regression for the SWMM wet storm results
+results_regression_wet<- lm(total_runoff_in ~Curve_Number + Slope + percent_imp + Area_sqft, 
+                            data = results_wet)
 
+#Graph the relationship bw simulated runoff and impervious cover
 runoff_imp_graph_wet<- results_wet %>% 
   ggplot(aes(x=percent_imp, y=total_runoff_in))+
   geom_point(aes(color=Urbanization_level))+
   labs(x= "Percent Impervious of Subcatchment", y= "Total Simulated Runoff (inches)")+
   scale_y_continuous(limits= c(0,3), breaks= seq(0,2.5, by= 0.5),expand= c(0,0.08))+
   scale_x_continuous(limits= c(0,80), breaks= seq(0,80, by= 10),expand= c(0,0))+
-  scale_color_manual(name= "Urbanization Level", values= c("darkgreen", "darkseagreen", "darkgoldenrod1"))+
+  scale_color_manual(name= "Urbanization Level", values= c("darkgreen", "darkseagreen", 
+                                                           "darkgoldenrod1"))+
   theme_classic()
 
+#Create a graph of the relationship vw simulated runof and impervious cover normalized by area
 runoff_norm_wet<- results_wet %>% 
   ggplot(aes(x=percent_imp, y=runoff_normalized))+
   geom_point(aes(color=Urbanization_level))+
-  labs(x= "Percent Impervious of Subcatchment", y= "Total Simulated Runoff Normalized by Area (inches/sqft)")+
+  labs(x= "Percent Impervious of Subcatchment", 
+       y= "Total Simulated Runoff Normalized by Area (inches/sqft)")+
   scale_y_continuous(expand= c(0,0))+
   scale_x_continuous(limits= c(0,80), breaks= seq(0,80, by= 10),expand= c(0,0))+
-  scale_color_manual(name= "Urbanization Level", values= c("darkgreen", "darkseagreen", "darkgoldenrod1"))+
+  scale_color_manual(name= "Urbanization Level", values= c("darkgreen", "darkseagreen", 
+                                                           "darkgoldenrod1"))+
   theme_classic()
 
 runoff_norm_wet
 runoff_imp_graph_wet
 
-##save runoff vs. impervious graph
+#Save runoff vs. impervious graph
 ggsave("runoff_imp_wet.pdf", width = 8, height =4)
 ggsave("runoff_imp_wet.png", width = 8, height =4)
 
-
+#Create a table of the regression results
 regress_table_wet<- stargazer(results_regression_wet, type ="html", digits= 2, 
                           dep.var.labels = "Total Runoff (Inches)", 
-                       covariate.labels = c("Curve Number", "Slope", "Percent Impervious", "Area (sqft)", "Y-Intercept"), 
+                       covariate.labels = c("Curve Number", "Slope", "Percent Impervious", 
+                                            "Area (sqft)", "Y-Intercept"), 
                        omit.stat = c("rsq"))
-
 regress_table_wet
 
 
 ```
 
-
-```{r, fig.show='hide', message = FALSE, warning = FALSE}
-#graph observed vs simulated
+# Analysis of simulated vs observed runoff 
+```{r, fig.show='hide', message = FALSE, warning = FALSE, results = 'hide'}
+#Graph observed vs simulated runoff
 
 observed<- read_csv("c35_observed.csv")
 simulated <- read_csv("C35_simulated_adj_cn25.csv")
@@ -154,7 +162,6 @@ regress
 sim<- discharge$simulated_flow_cfs
 obs<- discharge$discharge_obs_cfs
 
-library(hydroGOF)
 
 sutcliffe<- NSE(sim, obs, na.rm=TRUE, FUN=NULL, epsilon=c("Pushpalatha2012"))
 
@@ -182,7 +189,7 @@ calibrate_graph<- discharge %>%
 
 calibrate_graph  
 
-##save discharge graphs from the 2010 "dry" storm
+#Save discharge graphs from the 2010 "dry" storm
 ggsave("discharge10.pdf", width = 8, height =4)
 ggsave("dischage10.png", width = 8, height =4)
 
@@ -200,10 +207,12 @@ results_table<- results_wet %>%
   )
   
 results_table
-library(kableExtra)
 
 table_pretty<-results_table %>% 
-              kable(col.names=c("Urbanization Level","Number of Subcatchments", "Runoff Coefficient", "Total Runoff (in)", "Impervious Runoff (in)", "Pervious Runoff (in)","Total Infiltration (in)", "Peak Runoff (cfs)")) %>% 
+              kable(col.names=c("Urbanization Level","Number of Subcatchments", 
+                                "Runoff Coefficient", "Total Runoff (in)", 
+                                "Impervious Runoff (in)", "Pervious Runoff (in)",
+                                "Total Infiltration (in)", "Peak Runoff (cfs)")) %>% 
   kable_styling(bootstrap_options = "striped")
 
 table_pretty
@@ -233,7 +242,11 @@ min_range_runoff_table_dry<- results_dry %>%
   max_per_runoff=max(perv_runoff_in), 
   med_per_runoff=median(perv_runoff_in)
   ) %>% 
-  kable(col.names=c("Minimum Runoff Coefficient", "Maximum Runoff Coefficient", "Median Runoff Coefficient", "Minimum Impervious Runoff (in)", "Maximum Impervious Runoff (in)", "Median Impervious Runoff (In)", "Minimum Pervious Runoff (in)", "Maximum Pervious Runoff (in)", "Median Pervious Runoff (in)")) %>% 
+  kable(col.names=c("Minimum Runoff Coefficient", "Maximum Runoff Coefficient", 
+                    "Median Runoff Coefficient", "Minimum Impervious Runoff (in)", 
+                    "Maximum Impervious Runoff (in)", "Median Impervious Runoff (In)", 
+                    "Minimum Pervious Runoff (in)", "Maximum Pervious Runoff (in)", 
+                    "Median Pervious Runoff (in)")) %>% 
   kable_styling(bootstrap_options = "striped")
 
 min_range_runoff_table_dry
@@ -241,7 +254,10 @@ min_range_runoff_table_dry
 results_table_dry
 
 table_pretty_dry<-results_table_dry %>% 
-              kable(col.names=c("Urbanization Level","Number of Subcatchments", "Runoff Coefficient", "Total Runoff (in)", "Impervious Runoff (in)", "Pervious Runoff (in)","Total Infiltration (in)", "Peak Runoff (cfs)")) %>% 
+              kable(col.names=c("Urbanization Level","Number of Subcatchments", 
+                                "Runoff Coefficient", "Total Runoff (in)", 
+                                "Impervious Runoff (in)", "Pervious Runoff (in)",
+                                "Total Infiltration (in)", "Peak Runoff (cfs)")) %>% 
   kable_styling(bootstrap_options = "striped")
 
 table_pretty_dry
@@ -258,7 +274,11 @@ min_range_runoff_table_wet<- results_wet %>%
   max_per_runoff=max(perv_runoff_in), 
   med_per_runoff=median(perv_runoff_in)
   ) %>% 
-  kable(col.names=c("Minimum Runoff Coefficient", "Maximum Runoff Coefficient", "Median Runoff Coefficient", "Minimum Impervious Runoff (in)", "Maximum Impervious Runoff (in)", "Median Impervious Runoff (In)", "Minimum Pervious Runoff (in)", "Maximum Pervious Runoff (in)", "Median Pervious Runoff (in)")) %>% 
+  kable(col.names=c("Minimum Runoff Coefficient", "Maximum Runoff Coefficient", 
+                    "Median Runoff Coefficient", "Minimum Impervious Runoff (in)", 
+                    "Maximum Impervious Runoff (in)", "Median Impervious Runoff (In)",
+                    "Minimum Pervious Runoff (in)", "Maximum Pervious Runoff (in)", 
+                    "Median Pervious Runoff (in)")) %>% 
   kable_styling(bootstrap_options = "striped")
 
 min_range_runoff_table_wet
@@ -266,7 +286,8 @@ min_range_runoff_table_wet
 
 ```
 
-```{r, fig.show='hide', message = FALSE}
+## Analysis of observed vs simulated runoff for 2009 storm
+```{r, fig.show='hide', message = FALSE, results = 'hide'}
 observed09<- read_csv("c35_observed_09.csv")
 simulated09 <- read_csv("C35_simulated09.csv") 
 
@@ -314,30 +335,29 @@ ggsave("discharge09_final.pdf", width = 8, height =4)
 ggsave("dischage09_final.png", width = 8, height =4)
 ```
 
-```{r, fig.show='hide', warning = FALSE, message = FALSE}
-#picking top 15 subcatchments 
+## Top 15 subcatchments
+```{r, fig.show='hide', warning = FALSE, message = FALSE, results = 'hide'}
 
-dry_runoff_coef_top_10 <- top_n(results_dry, 15, runoff_coeff)
+dry_runoff_coef_top_15 <- top_n(results_dry, 15, runoff_coeff)
 
-dry_peak_top_10 <-top_n(results_dry, 15, peak_runoff_cfs)
+dry_peak_top_15 <-top_n(results_dry, 15, peak_runoff_cfs)
 
-wet_runoff_coef_top_10 <- top_n(results_wet, 15, runoff_coeff)
+wet_runoff_coef_top_15 <- top_n(results_wet, 15, runoff_coeff)
 
-wet_peak_top_10 <- top_n(results_wet, 15, peak_runoff_cfs)
+wet_peak_top_15 <- top_n(results_wet, 15, peak_runoff_cfs)
 
-write.csv(dry_runoff_coef_top_10, file = "dry_runoff_top_15.csv", row.names = FALSE)
+write.csv(dry_runoff_coef_top_15, file = "dry_runoff_top_15.csv", row.names = FALSE)
 
-write.csv(wet_runoff_coef_top_10, file = "wet_runoff_top_15.csv", row.names = FALSE)
+write.csv(wet_runoff_coef_top_15, file = "wet_runoff_top_15.csv", row.names = FALSE)
 
-write.csv(dry_peak_top_10,file = "dry_peak_top_15.csv", row.names = FALSE)
+write.csv(dry_peak_top_15,file = "dry_peak_top_15.csv", row.names = FALSE)
 
-write.csv(wet_peak_top_10, file = "wet_peak_top_15.csv", row.names = FALSE)
+write.csv(wet_peak_top_15, file = "wet_peak_top_15.csv", row.names = FALSE)
 
 ```
 
-visualizing the sediment data from 09 
-
-```{r, fig.show='hide', warning = FALSE, message = FALSE}
+## Visualizing the sediment data from 09 
+```{r, fig.show='hide', warning = FALSE, message = FALSE, results = 'hide'}
 
 sediment09<- read_csv("sediment_09_r.csv") %>% 
   mutate(discharge_obs_cfs = 
@@ -355,7 +375,7 @@ sediment_flow_graph <- sedimentandflow %>%
   geom_point(aes(x=time_step, y=susp_sed), color= "red")+
   theme_classic()
 
-sediment_flow_graph#still kinda ugly to look at, not sure it's worth all the trouble to overlay them on one graph
+sediment_flow_graph
 
 obs_discharge_09<- discharge09 %>% 
   ggplot(aes(x=time_step, y=discharge_obs_cfs)) +
@@ -373,7 +393,8 @@ ggsave("observed_discharge_09_1.png", width = 8, height =4)
 sediment_graph<- sediment09 %>% 
   ggplot()+
   geom_point(aes(x=time_step, y=susp_sed), size= 5, color= "darkgoldenrod1")+
-  geom_segment(aes(x=time_step, xend=time_step, y=0, yend=susp_sed), size=1.5, color="darkgoldenrod1")+
+  geom_segment(aes(x=time_step, xend=time_step, y=0, yend=susp_sed), size=1.5, 
+               color="darkgoldenrod1")+
   scale_y_continuous(expand = c(0,0), breaks= seq(0,2500, by=250), limits= c(0, 2500))+
   scale_x_continuous(expand = c(0,0), breaks= seq(0,14, by =1), limits=c(0,14))+
   labs(x= "Time (hours)", y= "Suspended Sediments (mg/L)")+
