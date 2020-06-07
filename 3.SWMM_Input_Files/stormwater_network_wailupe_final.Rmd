@@ -70,7 +70,7 @@ network <- data %>%
 
 We will also re-calculate distance between xy points because different sources return  different values for some of the conduits and some conduits need to have this distance calculated anyway because it is blank. 
 
-## Step 1 - Create unique names for nodes with the same x and y coordinates, and unique names for conduits
+## 1. Create unique names for nodes with the same x and y coordinates, and unique names for conduits
 
 ```{r}
 #Index xy coordinates with unique IDs if different, same IDs if repeated
@@ -163,7 +163,7 @@ lengths <- dist %>%
 
 ```
 
-## 4. file output for conduits
+## 4. File output for conduits
 [CONDUITS]								
 ;;Name  From Node To Node  Length Roughness InOffset  OutOffset InitFlow  MaxFlow  
 ;;---------- ---------- ---------- ---------- ---------- ---------- ---------- ---------- ----------  
@@ -192,7 +192,7 @@ conduits$maxflow <- 0
 write.csv(conduits,"inp_conduits.csv", row.names = FALSE)
 ```
 
-## 5. file output for lengths
+## 5. File output for conduit cross sections
 [XSECTIONS]							
 ;;Link  Shape	Geom1	Geom2	Geom3 Geom4 Barrels Culvert   
 ;;--------------	------------	----------------	----------  
@@ -362,7 +362,7 @@ write.csv(xsections,"inp_xsections.csv", row.names = FALSE)
 ```
 
 
-## 8. Junctions and coordinates/vertices
+## 6. Junctions and coordinates/vertices
 
 [JUNCTIONS]					
 ;;Name  Elevation MaxDepth  InitDepth SurDepth  Aponded   
@@ -429,6 +429,7 @@ write.csv(route_to2,"subc_outlet.csv", row.names = FALSE)
   
 ```
 
+## 7. Outfalls
 [OUTFALLS]					
 ;;Name          	Elevation 	Type      	Stage Data      	Gated   	Route To     
 ;;--------------	----------	----------	----------------	--------	----------------  
@@ -459,7 +460,7 @@ outfalls$routeto <- NA
 
 write.csv(outfalls,"inp_outfalls.csv", row.names = FALSE)
 ```
-
+## 8. Coordinates
 [COORDINATES]		
 ;;Node          	X-Coord           	Y-Coord           
 ;;--------------	------------------	------------------
@@ -482,6 +483,7 @@ coordinates <- unique %>%
 write.csv(coordinates,"inp_coordinates.csv", row.names = FALSE)
 ```
 
+## 9. Vertices
 [VERTICES]		
 ;;Link          	X-Coord           	Y-Coord           
 ;;--------------	------------------	------------------
